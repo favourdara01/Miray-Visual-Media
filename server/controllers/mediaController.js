@@ -2,7 +2,6 @@ import Media from "../models/Media.js";
 import Gallery from "../models/Gallery.js";
 import cloudinary from "../config/cloudinary.js";
 import Client from "../models/Client.js";
-import { sendEmail } from "../utils/sendEmail.js";
 import ViewLog from "../models/ViewLog.js";
 
 // ==========================

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 // ================= PUBLIC =================
-import Home from "./pages/home.jsx";
+import Home from "./pages/Home.jsx";
 import GalleryPage from "./pages/Gallerypage";
 
 // ================= ADMIN =================
@@ -16,9 +16,9 @@ import CreateClient from "./pages/Admin/CreateClient.jsx";
 import AdminGalleryView from "./pages/Admin/AdminGalleryView";
 
 // ================= CLIENT =================
-import ClientLogin from "./pages/Client/Login";
-import ClientDashboard from "./pages/Client/Dashboard";
-import ClientGalleryView from "./pages/Client/ClientGalleryView";
+import ClientLogin from "./pages/client/Login";
+import ClientDashboard from "./pages/client/Dashboard";
+import ClientGalleryView from "./pages/Client/clientGalleryView";
 
 // ================= LAYOUT / SECURITY =================
 import ProtectedRoute from "./components/ProtectedRoute";

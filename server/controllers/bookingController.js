@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-import { sendEmail } from "../utils/sendEmail.js";
+import { sendBookingEmail } from "../utils/sendEmail.js";
 
 // ==========================
 // CREATE BOOKING + REALTIME + EMAIL
@@ -24,19 +24,12 @@ export const createBooking = async (req, res) => {
     });
 
     // 🔥 REAL-TIME
-    req.io.emit("new-booking", booking);
+    if (req.io) {
+      req.io.emit("new-booking", booking);
+    }
 
     // 🔥 EMAIL TO CLIENT
-    await sendEmail({
-      to: email,
-      subject: "Booking Received 🎉",
-      html: `
-        <h2>Hello ${name},</h2>
-        <p>Your booking has been received 🎉</p>
-        <p><strong>Service:</strong> ${service}</p>
-        <p><strong>Date:</strong> ${date}</p>
-      `,
-    });
+    await sendBookingEmail(booking);
 
     res.status(201).json(booking);
 
@@ -88,26 +81,24 @@ export const updateBookingStatus = async (req, res) => {
       { new: true }
     );
 
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
     // 🔥 EMAIL WHEN CONFIRMED
     if (req.body.status === "confirmed") {
-      await sendEmail({
-        to: booking.email,
-        subject: "Booking Confirmed ✅",
-        html: `
-          <h2>Hello ${booking.name},</h2>
-          <p>Your booking has been confirmed 🎉</p>
-          <p><strong>Service:</strong> ${booking.service}</p>
-          <p><strong>Date:</strong> ${booking.date}</p>
-        `,
-      });
+      await sendBookingEmail(booking);
     }
 
     // 🔥 REAL-TIME UPDATE
-    req.io.emit("booking-updated", booking);
+    if (req.io) {
+      req.io.emit("booking-updated", booking);
+    }
 
     res.json(booking);
 
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 };

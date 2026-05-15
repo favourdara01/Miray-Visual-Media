@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smooth cinematic feel */
+body {
+  @apply bg-primary text-white transition-all duration-500;
+}
+
+button {
+  margin-bottom: 24px;
+}
+
+button:hover {
+  border-color: var(--accent-border);
+}

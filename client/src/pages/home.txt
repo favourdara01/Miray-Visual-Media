@@ -1,0 +1,49 @@
+import Booking from "../components/Booking";
+
+export default function Home() {
+  return (
+    <div>
+
+      {/* HERO */}
+      <section className="h-[80vh] flex items-center justify-center bg-white text-center">
+        <div>
+          <h1 className="text-4xl md:text-6xl font-bold text-[#015103]">
+            Miray Visual Media
+          </h1>
+          <p className="mt-4 text-gray-500">
+            Capturing moments that last forever
+          </p>
+        </div>
+      </section>
+
+      {/* ABOUT */}
+      <section className="p-6 text-center md:p-12">
+        <h2 className="mb-4 text-3xl font-bold">About Us</h2>
+        <p className="max-w-2xl mx-auto text-gray-600">
+          We provide premium photography and videography services for weddings,
+          birthdays, and corporate events.
+        </p>
+      </section>
+
+      {/* BOOKING SECTION */}
+      <section className="p-6 bg-gray-100 md:p-12">
+        <h2 className="mb-6 text-3xl font-bold text-center">
+          Book a Session
+        </h2>
+
+        <div className="grid items-center max-w-5xl gap-6 mx-auto md:grid-cols-2">
+
+          {/* IMAGE */}
+          <img
+            src="/images/booking.jpg"
+            className="shadow rounded-xl"
+          />
+
+          {/* FORM */}
+          <Booking />
+        </div>
+      </section>
+
+    </div>
+  );
+}

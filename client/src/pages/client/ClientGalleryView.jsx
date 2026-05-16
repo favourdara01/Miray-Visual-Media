@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import api from "../api/axios";
+import api from "../../api/axios";
 import Lightbox from "yet-another-react-lightbox";
 import "yet-another-react-lightbox/styles.css";
 import Fullscreen from "yet-another-react-lightbox/plugins/fullscreen";

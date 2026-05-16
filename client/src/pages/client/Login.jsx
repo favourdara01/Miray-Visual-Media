@@ -1,5 +1,5 @@
 import { useState } from "react";
-import api from "../api/axios";
+import api from "../../api/axios";
 import { motion } from "framer-motion";
 
 export default function ClientLogin() {

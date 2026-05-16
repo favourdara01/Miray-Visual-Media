@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import api from "../api/axios";
+import api from "../../api/axios";
 import { motion } from "framer-motion";
 import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";

@@ -18,7 +18,7 @@ import AdminGalleryView from "./pages/Admin/AdminGalleryView";
 // ================= CLIENT =================
 import ClientLogin from "./pages/client/Login";
 import ClientDashboard from "./pages/client/Dashboard";
-import ClientGalleryView from "./pages/client/clientGalleryView";
+import ClientGalleryView from "./pages/client/ClientGalleryView";
 
 // ================= LAYOUT / SECURITY =================
 import ProtectedRoute from "./components/ProtectedRoute";

@@ -32,6 +32,7 @@ export const sendEmail = async ({ to, subject, html }) => {
 };
 
 // ================= BOOKING EMAIL =================
+
 export const sendBookingEmail = async (booking) => {
   try {
     console.log("📧 Sending booking email to:", booking.email);
@@ -43,7 +44,7 @@ export const sendBookingEmail = async (booking) => {
       html: `
         <div style="font-family: Arial; background:#f9f9f9; padding:30px;">
           <div style="max-width:600px;margin:auto;background:white;padding:20px;border-radius:10px;">
-            
+
             <h2 style="color:#015103;">Hello ${booking.name},</h2>
 
             <p>Your booking has been received successfully 🎉</p>
@@ -72,6 +73,9 @@ export const sendBookingEmail = async (booking) => {
     return info;
 
   } catch (err) {
-    console.error("❌ BOOKING EMAIL FAILED:", err.message);
+    console.error("❌ BOOKING EMAIL FAILED:");
+    console.error(err);
+    throw err;
   }
 };
+

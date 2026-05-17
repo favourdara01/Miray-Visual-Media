@@ -1,5 +1,8 @@
 import Typewriter from "typewriter-effect";
 import { motion } from "framer-motion";
+import hero1 from "/src/assets/hero1.jpg";
+import hero2 from "/src/assets/hero2.jpg";
+
 
 const Hero = () => {
   const scrollTo = (id) => {
@@ -88,7 +91,7 @@ const Hero = () => {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            src="src/assets/hero1.jpg"
+            src= {hero1}
             className="object-cover w-full h-[420px] rounded-[28px] shadow-2xl border border-white/10 hover:scale-[1.03] transition duration-500"
           />
 
@@ -100,7 +103,7 @@ const Hero = () => {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            src="src/assets/hero2.jpg"
+            src={hero2}
             className="object-cover w-full h-[350px] mt-12 rounded-[28px] shadow-2xl border border-white/10 hover:scale-[1.03] transition duration-500"
           />
 

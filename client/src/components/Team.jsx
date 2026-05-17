@@ -1,12 +1,16 @@
 import { motion } from "framer-motion";
 import { FaInstagram, FaLinkedin } from "react-icons/fa";
+import mira from "/src/assets/mira.jpeg";
+import favour from "/src/assets/favour.jpg";
+import princess from "/src/assets/princess.jpg";
+import team4 from "/src/assets/team4.jpg";
 
 const teamMembers = [
   {
     id: 1,
     name: "Miracle John",
     role: "Creative Director",
-    image: "../src/assets/mira.jpeg",
+    image: mira,
     instagram: "https://www.instagram.com/official_omininowest?igsh=MXJnMW5zZzZ4bzZwYw==",
     linkedin: "#",
   },
@@ -14,7 +18,7 @@ const teamMembers = [
     id: 2,
     name: "Favour Dara",
     role: "Photographer",
-    image: "../src/assets/favour.jpg",
+    image: favour,
     instagram: "https://www.instagram.com/favourdara01?igsh=ZHJwN3ZncDUyaHlp",
     linkedin: "#",
   },
@@ -22,7 +26,7 @@ const teamMembers = [
     id: 3,
     name: "Akinmoye Oluwaponmile",
     role: "Virtual Assistant",
-    image: "../src/assets/princess.jpg",
+    image: princess,
     instagram: "#",
     linkedin: "#",
   },
@@ -30,7 +34,7 @@ const teamMembers = [
     id: 4,
     name: "Daramola Samson",
     role: "Editor",
-    image: "../src/assets/team4.jpg",
+    image: team4,
     instagram: "#",
     linkedin: "#",
   },

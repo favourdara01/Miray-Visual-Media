@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState, useRef } from "react";
 import { FaCamera, FaVideo, FaStar } from "react-icons/fa";
+import about from "/src/assets/about.jpg";  
 
 // ================= COUNT UP (ON VIEW) =================
 const Counter = ({ target }) => {
@@ -78,7 +79,7 @@ const About = () => {
             <div className="absolute inset-0 rounded-3xl bg-gradient-to-tr from-[#015103]/10 to-[#FE8521]/10 blur-2xl scale-95 group-hover:scale-100 transition duration-500" />
 
             <img
-              src="src/assets/about.jpg"
+              src={about}
               className="relative z-10 w-full h-[480px] object-cover rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.18)] transition duration-500 group-hover:shadow-[0_25px_70px_rgba(0,0,0,0.25)]"
             />
 

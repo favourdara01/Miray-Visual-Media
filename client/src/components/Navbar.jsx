@@ -149,6 +149,8 @@ export default function Navbar() {
           <Link
             to="/client/login"
             onClick={() => setIsOpen(false)}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center justify-center mt-2 bg-[#FE8521] py-3 rounded-full text-white font-medium"
           >
             Client Login

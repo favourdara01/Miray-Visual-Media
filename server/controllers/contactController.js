@@ -1,25 +1,47 @@
 import Contact from "../models/Contact.js";
-import { sendEmail } from "../utils/sendEmail.js"; // ✅ correct import
+import { sendEmail } from "../utils/sendEmail.js";
 
 export const sendContact = async (req, res) => {
   try {
-    const contact = await Contact.create(req.body);
+    const { name, email, message } = req.body;
 
-    // ✅ Send email properly
-    await sendEmail({
+    // ✅ Save to DB
+    const contact = await Contact.create({
+      name,
+      email,
+      message,
+    });
+
+    // ✅ Send email WITHOUT blocking response
+    sendEmail({
       to: process.env.ADMIN_EMAIL,
       subject: "New Contact Message",
       html: `
-        <h2>New Message</h2>
-        <p><b>Name:</b> ${req.body.name}</p>
-        <p><b>Email:</b> ${req.body.email}</p>
-        <p>${req.body.message}</p>
+        <h2>New Contact Message</h2>
+
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+
+        <p><strong>Message:</strong></p>
+        <p>${message}</p>
       `,
+    }).catch((err) => {
+      console.error("CONTACT EMAIL FAILED:", err.message);
     });
 
-    res.json({ message: "Message sent" });
+    // ✅ Instant response
+    res.status(201).json({
+      success: true,
+      message: "Message sent successfully",
+      contact,
+    });
+
   } catch (err) {
     console.error("CONTACT ERROR:", err);
-    res.status(500).json({ message: err.message });
+
+    res.status(500).json({
+      success: false,
+      message: err.message,
+    });
   }
 };

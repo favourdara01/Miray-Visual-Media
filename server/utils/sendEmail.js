@@ -8,19 +8,26 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
   family: 4, // force IPv4 (fix ENETUNREACH)
+   connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
 });
 
 // ================= GENERIC EMAIL =================
 export const sendEmail = async ({ to, subject, html }) => {
   try {
-    return await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Miray Visual Media" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
     });
+
+    console.log("✅ Email sent:", info.response);
+
+    return info;
   } catch (err) {
-    console.error("EMAIL FAILED:", err.message);
+    console.error("❌ EMAIL FAILED:", err.message);
   }
 };
 
@@ -29,7 +36,7 @@ export const sendBookingEmail = async (booking) => {
   try {
     console.log("📧 Sending booking email to:", booking.email);
 
-    return await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: `"Miray Visuals" <${process.env.EMAIL_USER}>`,
       to: booking.email,
       subject: "Booking Received 🎉",
@@ -59,7 +66,12 @@ export const sendBookingEmail = async (booking) => {
         </div>
       `,
     });
+
+    console.log("✅ Booking email sent:", info.response);
+
+    return info;
+
   } catch (err) {
-    console.error("BOOKING EMAIL FAILED:", err.message);
+    console.error("❌ BOOKING EMAIL FAILED:", err.message);
   }
 };

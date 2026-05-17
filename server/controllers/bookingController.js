@@ -29,7 +29,7 @@ export const createBooking = async (req, res) => {
     }
 
     // 🔥 EMAIL TO CLIENT
-    await sendBookingEmail(booking);
+    sendBookingEmail(booking).catch(console.error);
 
     res.status(201).json(booking);
 

@@ -151,9 +151,14 @@ const GalleryPreview = () => {
 
                 {item.type === "image" ? (
                   <img
-                    src={item.url}
-                    className="object-cover w-full transition duration-500 h-60 group-hover:scale-105"
-                  />
+                  src={item.url.replace(
+                    "/upload/",
+                    "/upload/f_auto,q_auto,w_900/"
+                  )}
+                  loading="lazy"
+                  alt=""
+                  className="object-cover w-full transition duration-500 h-60 group-hover:scale-105"
+                />
                 ) : (
                   <div className="relative">
 
@@ -162,6 +167,8 @@ const GalleryPreview = () => {
                       muted
                       loop
                       autoPlay
+                      playsInline
+                      preload="metadata"
                     >
                       <source src={item.url} type="video/mp4" />
                     </video>

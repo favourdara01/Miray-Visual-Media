@@ -3,6 +3,7 @@ import axios from "axios";
 const api = axios.create({
   baseURL: "https://miray-visual-media-1.onrender.com/api",
   withCredentials: true,
+  timeout: 15000, // 15 seconds timeout
 });
 
 // Attach token automatically

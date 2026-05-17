@@ -50,7 +50,7 @@ function App() {
 
           {/* ================= CLIENT ================= */}
           <Route path="/client/login" element={<ClientLogin />} />
-          <Route path="/client/dashboard" element={<ClientDashboard />} />
+          <Route path="/client/Dashboard" element={<ClientDashboard />} />
 
           {/* ================= ADMIN LOGIN ================= */}
           <Route path="/admin/login" element={<Login />} />

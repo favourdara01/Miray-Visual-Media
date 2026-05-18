@@ -2,6 +2,7 @@ import { useState } from "react";
 import api from "../../api/axios";
 import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import aboutImg from "../../assets/about.jpg";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -20,7 +21,7 @@ const Login = () => {
 
     sessionStorage.setItem("accessToken", res.data.accessToken);
 
-    window.location.href = "/admin";
+    window.location.href = "/#/admin";
   } catch (err) {
     console.log(err.response?.data || err.message);
   }
@@ -33,9 +34,9 @@ const Login = () => {
       <div className="items-center justify-center hidden p-6 md:flex lg:p-10">
         <div className="relative w-full h-full overflow-hidden shadow-xl rounded-3xl">
           <img
-            src="/src/assets/about.jpg"
-            className="absolute inset-0 object-cover w-full h-full"
-          />
+  src={aboutImg}
+  className="absolute inset-0 object-cover w-full h-full"
+/>
           <div className="absolute inset-0 bg-[#015103]/40" />
 
           <div className="relative z-10 flex flex-col justify-end h-full p-10 text-white">

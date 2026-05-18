@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route } from "react-router-dom";
 
 // ================= PUBLIC =================
 import Home from "./pages/Home.jsx";
@@ -35,7 +35,7 @@ import OfflineBanner from "./components/OfflineBanner";
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
 
       {/* 🔥 GLOBAL UX LAYERS */}
       <ErrorBoundary>
@@ -50,7 +50,7 @@ function App() {
 
           {/* ================= CLIENT ================= */}
           <Route path="/client/login" element={<ClientLogin />} />
-          <Route path="/client/Dashboard" element={<ClientDashboard />} />
+          <Route path="/client/dashboard" element={<ClientDashboard />} />
 
           {/* ================= ADMIN LOGIN ================= */}
           <Route path="/admin/login" element={<Login />} />
@@ -84,7 +84,7 @@ function App() {
         </Routes>
       </ErrorBoundary>
 
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 

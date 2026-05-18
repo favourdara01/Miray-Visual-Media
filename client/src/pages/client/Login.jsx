@@ -35,7 +35,7 @@ export default function ClientLogin() {
         JSON.stringify(res.data.client)
       );
 
-      window.location.href = "/client/dashboard";
+      window.location.href = "/#/client/dashboard";
 
     } catch (err) {
       setError(

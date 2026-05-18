@@ -14,29 +14,6 @@ export default function ClientDashboard() {
 
   const token = sessionStorage.getItem("accessToken");
 
-  // ================= API =================
-  const api = api.create({
-    baseURL: "http://localhost:5000/api",
-    withCredentials: true,
-  });
-
-  api.interceptors.request.use((config) => {
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  });
-
-  api.interceptors.response.use(
-    (res) => res,
-    (err) => {
-      if (err.response?.status === 401) {
-        sessionStorage.removeItem("accessToken");
-        navigate("/client/login");
-      }
-      return Promise.reject(err);
-    }
-  );
 
   // ================= FETCH =================
   const fetchGalleries = async () => {
@@ -278,7 +255,7 @@ export default function ClientDashboard() {
                   <div className="flex gap-3 mt-5">
 
                     <a
-                      href={`/gallery/${g._id}`}
+                      href={`/#/gallery/${g._id}`}
                       className="inline-flex items-center justify-center flex-1 px-5 py-3 font-medium text-white transition rounded-xl bg-[#FE8521] hover:bg-orange-600"
                     >
                       Open Album

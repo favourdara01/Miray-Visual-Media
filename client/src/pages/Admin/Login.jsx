@@ -3,6 +3,8 @@ import api from "../../api/axios";
 import { motion } from "framer-motion";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import aboutImg from "../../assets/about.jpg";
+import { useNavigate } from "react-router-dom";
+
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -11,6 +13,8 @@ const Login = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
@@ -29,7 +33,7 @@ const Login = () => {
         res.data.accessToken
       );
 
-      window.location.href = "/#/admin";
+      navigate("/admin");
 
     } catch (err) {
       console.log(err.response?.data || err.message);

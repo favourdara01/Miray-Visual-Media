@@ -45,19 +45,19 @@ function App() {
 
           {/* ================= PUBLIC ROUTES ================= */}
           <Route path="/" element={<Home />} />
-          <Route path="/gallery" element={<GalleryPage />} />
-          <Route path="/gallery/:id" element={<ClientGalleryView />} />
+          <Route path="gallery" element={<GalleryPage />} />
+          <Route path="gallery/:id" element={<ClientGalleryView />} />
 
           {/* ================= CLIENT ================= */}
-          <Route path="/client/login" element={<ClientLogin />} />
-          <Route path="/client/dashboard" element={<ClientDashboard />} />
+          <Route path="client/login" element={<ClientLogin />} />
+          <Route path="client/dashboard" element={<ClientDashboard />} />
 
           {/* ================= ADMIN LOGIN ================= */}
-          <Route path="/admin/login" element={<Login />} />
+          <Route path="admin/login" element={<Login />} />
 
           {/* ================= ADMIN PROTECTED AREA ================= */}
           <Route
-            path="/admin"
+            path="admin"
             element={
               <ProtectedRoute>
                 <AdminLayout />
@@ -75,10 +75,10 @@ function App() {
           </Route>
 
           {/* ================= ERROR PAGES ================= */}
-          <Route path="/403" element={<Forbidden />} />
-          <Route path="/500" element={<ServerError />} />
+          <Route path="403" element={<Forbidden />} />
+          <Route path="500" element={<ServerError />} />
 
-          {/* ================= FALLBACK (VERY IMPORTANT) ================= */}
+          {/* ================= FALLBACK ================= */}
           <Route path="*" element={<NotFound />} />
 
         </Routes>

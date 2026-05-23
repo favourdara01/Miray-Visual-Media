@@ -91,11 +91,14 @@ app.use(globalLimiter);
 // ================= SOCKET.IO =================
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
       "https://miray-visual-media-2.onrender.com",
     ],
     credentials: true,
   },
+  transports: ["websocket", "polling"], // 🔥 IMPORTANT FOR RENDER
+  allowEIO3: true,
 });
 
 io.on("connection", (socket) => {

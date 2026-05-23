@@ -35,23 +35,30 @@ export default function Bookings() {
   }, [filters]);
 
   // ================= SOCKET =================
-  useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL, {
-  withCredentials: true,
-});
+  // ================= SOCKET =================
+useEffect(() => {
+  const socket = io(import.meta.env.VITE_API_URL, {
+    withCredentials: true,
+    auth: { token },
+    transports: ["websocket", "polling"],
+  });
 
-    socket.on("new-booking", (data) => {
-      setBookings((prev) => [data, ...prev]);
-    });
+  socket.on("new-booking", (data) => {
+    setBookings((prev) => [data, ...prev]);
+  });
 
-    socket.on("booking-updated", (updated) => {
-      setBookings((prev) =>
-        prev.map((b) => (b._id === updated._id ? updated : b))
-      );
-    });
+  socket.on("booking-updated", (updated) => {
+    setBookings((prev) =>
+      prev.map((b) => (b._id === updated._id ? updated : b))
+    );
+  });
 
-    return () => socket.disconnect();
-  }, []);
+  socket.on("connect_error", (err) => {
+    console.log("Socket auth failed:", err.message);
+  });
+
+  return () => socket.disconnect();
+}, []);
 
   // ================= UPDATE STATUS =================
   const updateStatus = async (id, status) => {

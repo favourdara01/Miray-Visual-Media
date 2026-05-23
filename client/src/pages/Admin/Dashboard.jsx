@@ -43,35 +43,39 @@ export default function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    if (!token) {
-      navigate("/admin/login");
-      return;
-    }
+useEffect(() => {
+  if (!token) {
+    navigate("/admin/login");
+    return;
+  }
 
-    fetchAnalytics();
-    fetchBookings();
+  fetchAnalytics();
+  fetchBookings();
 
-    const socket = io(import.meta.env.VITE_API_URL, {
+  const socket = io(
+    "https://miray-visual-media-1.onrender.com",
+    {
       withCredentials: true,
       auth: { token },
-    });
+      transports: ["websocket", "polling"],
+    }
+  );
 
-    socket.on("connect_error", () => {
-      console.log("Socket auth failed");
-    });
+  socket.on("connect_error", () => {
+    console.log("Socket auth failed");
+  });
 
-    socket.on("new-media", () => {
-      fetchAnalytics();
-    });
+  socket.on("new-media", () => {
+    fetchAnalytics();
+  });
 
-    socket.on("new-booking", (data) => {
-      setNotifications((prev) => [data, ...prev]);
-      fetchBookings();
-    });
+  socket.on("new-booking", (data) => {
+    setNotifications((prev) => [data, ...prev]);
+    fetchBookings();
+  });
 
-    return () => socket.disconnect();
-  }, []);
+  return () => socket.disconnect();
+}, []);
 
   return (
     <div className="min-h-screen p-4 md:p-6 bg-gradient-to-b from-[#f8faf8] to-white">

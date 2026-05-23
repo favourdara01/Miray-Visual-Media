@@ -36,7 +36,9 @@ export default function Bookings() {
 
   // ================= SOCKET =================
   useEffect(() => {
-    const socket = io("http://localhost:5000");
+    const socket = io(import.meta.env.VITE_API_URL, {
+  withCredentials: true,
+});
 
     socket.on("new-booking", (data) => {
       setBookings((prev) => [data, ...prev]);
@@ -55,7 +57,7 @@ export default function Bookings() {
   const updateStatus = async (id, status) => {
     try {
       const res = await api.put(
-        `/api/bookings/${id}`,
+        `/bookings/${id}`,
         { status },
         { headers: { Authorization: `Bearer ${token}` } }
       );

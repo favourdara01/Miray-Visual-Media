@@ -1,37 +1,8 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-// ================= TRANSPORTER =================
-const transporter = nodemailer.createTransport({
-  // 142.250.141.108 is the explicit IPv4 address for smtp.gmail.com
-  host: "142.250.141.108", 
-  port: 465,
-  secure: true, 
-
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-
-  // Tells Nodemailer to expect the certificate to match Gmail, 
-  // preventing SSL security mismatch errors since we are using an IP address instead of a domain name.
-  tls: {
-    servername: "smtp.gmail.com",
-    rejectUnauthorized: true,
-  },
-
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
-// ================= VERIFY TRANSPORTER =================
-transporter.verify((error, success) => {
-  if (error) {
-    console.error("❌ EMAIL SERVER ERROR:");
-    console.error(error);
-  } else {
-    console.log("✅ Email server ready");
-  }
-});
+// ================= INITIALIZE API =================
+// This automatically pulls your API key from Render's environment variables
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ================= GENERIC EMAIL =================
 export const sendEmail = async ({
@@ -40,23 +11,27 @@ export const sendEmail = async ({
   html,
 }) => {
   try {
-    console.log("📧 Sending email to:", to);
+    console.log("📧 Sending API email to:", to);
 
-    const info = await transporter.sendMail({
-      from: `"Miray Visual Media" <${process.env.EMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      // ⚠️ NOTE: On Resend's free tier, you must use this 'from' address 
+      // until you verify a custom domain inside your Resend dashboard.
+      from: "Miray Visual Media <onboarding@resend.dev>",
       to,
       subject,
       html,
     });
 
-    console.log("✅ Email sent:", info.response);
+    if (error) {
+      throw error;
+    }
 
-    return info;
+    console.log("✅ Email sent via API:", data.id);
+    return data;
 
   } catch (err) {
     console.error("❌ EMAIL FAILED:");
     console.error(err);
-
     throw err;
   }
 };
@@ -67,16 +42,14 @@ export const sendBookingEmail = async (
 ) => {
   try {
     console.log(
-      "📧 Sending booking email to:",
+      "📧 Sending booking email via API to:",
       booking.email
     );
 
-    const info = await transporter.sendMail({
-      from: `"Miray Visual Media" <${process.env.EMAIL_USER}>`,
+    const { data, error } = await resend.emails.send({
+      from: "Miray Visual Media <onboarding@resend.dev>",
       to: booking.email,
-
       subject: "Booking Received 🎉",
-
       html: `
         <div style="font-family:Arial;background:#f9f9f9;padding:30px;">
 
@@ -123,20 +96,22 @@ export const sendBookingEmail = async (
       `,
     });
 
+    if (error) {
+      throw error;
+    }
+
     console.log(
-      "✅ Booking email sent:",
-      info.response
+      "✅ Booking email sent via API:",
+      data.id
     );
 
-    return info;
+    return data;
 
   } catch (err) {
     console.error(
       "❌ BOOKING EMAIL FAILED:"
     );
-
     console.error(err);
-
     throw err;
   }
 };

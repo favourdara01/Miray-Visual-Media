@@ -1,23 +1,27 @@
 import nodemailer from "nodemailer";
 
+
 // ================= TRANSPORTER =================
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // true for port 465
 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 
-  // ✅ Fix Render / IPv6 issues
-  family: 4,
+  // ✅ Force Node.js to prioritize IPv4 address lookups
+  dnsLookup: (hostname, options, callback) => {
+    require('dns').lookup(hostname, { family: 4 }, callback);
+  },
 
-  // ✅ Prevent hanging requests
+  // ✅ Keep safety configurations
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,
 });
-
 // ================= VERIFY TRANSPORTER =================
 transporter.verify((error, success) => {
   if (error) {

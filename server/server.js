@@ -39,6 +39,10 @@ if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET missing");
 
 // ================= APP =================
 const app = express();
+
+// ✅ ADD THIS LINE RIGHT HERE BEFORE ANY MIDDLEWARE
+app.set('trust proxy', 1);
+
 const server = http.createServer(app);
 
 // ================= SECURITY =================

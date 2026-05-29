@@ -1,23 +1,24 @@
 import nodemailer from "nodemailer";
 
-
 // ================= TRANSPORTER =================
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  // 142.250.141.108 is the explicit IPv4 address for smtp.gmail.com
+  host: "142.250.141.108", 
   port: 465,
-  secure: true, // true for port 465
+  secure: true, 
 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
 
-  // ✅ Force Node.js to prioritize IPv4 address lookups
-  dnsLookup: (hostname, options, callback) => {
-    require('dns').lookup(hostname, { family: 4 }, callback);
+  // Tells Nodemailer to expect the certificate to match Gmail, 
+  // preventing SSL security mismatch errors since we are using an IP address instead of a domain name.
+  tls: {
+    servername: "smtp.gmail.com",
+    rejectUnauthorized: true,
   },
 
-  // ✅ Keep safety configurations
   connectionTimeout: 10000,
   greetingTimeout: 10000,
   socketTimeout: 10000,

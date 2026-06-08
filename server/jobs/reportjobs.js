@@ -2,7 +2,9 @@ import cron from "node-cron";
 import Booking from "../models/Booking.js";
 import Media from "../models/Media.js";
 import Client from "../models/Client.js";
-import transporter from "../config/email.js";
+
+// ✅ SWAPPED: Import your Resend API wrapper utility instead of the old Nodemailer transporter
+import { sendEmail } from "../utils/sendEmail.js";
 
 // ===============================
 // SAFE REPORT GENERATOR
@@ -132,11 +134,6 @@ const generateReport = async (rangeLabel) => {
 const sendReportEmail = async (label, subject) => {
   try {
     // ENV VALIDATION
-    if (!process.env.EMAIL_USER) {
-      console.error("❌ EMAIL_USER missing");
-      return;
-    }
-
     if (!process.env.ADMIN_EMAIL) {
       console.error("❌ ADMIN_EMAIL missing");
       return;
@@ -149,8 +146,8 @@ const sendReportEmail = async (label, subject) => {
       return;
     }
 
-    await transporter.sendMail({
-      from: `"Miray Visual System" <${process.env.EMAIL_USER}>`,
+    // ✅ SWAPPED: Uses your brand-new Resend HTTPS wrapper function
+    await sendEmail({
       to: process.env.ADMIN_EMAIL,
       subject,
       html,

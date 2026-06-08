@@ -101,7 +101,9 @@ const io = new Server(server, {
     ],
     credentials: true,
   },
-  transports: ["websocket", "polling"], // 🔥 IMPORTANT FOR RENDER
+  // ✅ FIX: Put 'polling' first. This establishes an instant HTTP handshake 
+  // that Render accepts, then upgrades seamlessly to a WebSocket.
+  transports: ["polling", "websocket"], 
   allowEIO3: true,
 });
 

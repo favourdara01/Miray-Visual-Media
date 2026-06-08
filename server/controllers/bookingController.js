@@ -1,5 +1,6 @@
 import Booking from "../models/Booking.js";
-import { sendBookingEmail } from "../utils/sendEmail.js";
+// ✅ Double-check that this path accurately goes to your file containing the Resend functions!
+import { sendBookingEmail } from "../utils/sendEmail.js"; 
 
 // ==========================
 // CREATE BOOKING + REALTIME + EMAIL
@@ -9,9 +10,7 @@ export const createBooking = async (req, res) => {
     const { name, email, service, date, message } = req.body;
 
     if (!name || !email || !service || !date) {
-      return res.status(400).json({
-        message: "Missing required fields",
-      });
+      return res.status(400).json({ message: "Missing required fields" });
     }
 
     const booking = await Booking.create({
@@ -28,11 +27,10 @@ export const createBooking = async (req, res) => {
       req.io.emit("new-booking", booking);
     }
 
-    // 🔥 EMAIL TO CLIENT
+    // 🔥 EMAIL TO CLIENT (Uses Resend API now)
     sendBookingEmail(booking).catch(console.error);
 
     res.status(201).json(booking);
-
   } catch (err) {
     console.error("BOOKING ERROR:", err);
     res.status(500).json({ message: err.message });
@@ -45,7 +43,6 @@ export const createBooking = async (req, res) => {
 export const getBookings = async (req, res) => {
   try {
     const { status, date, client } = req.query;
-
     let query = {};
 
     if (status) query.status = status;
@@ -54,7 +51,6 @@ export const getBookings = async (req, res) => {
       const start = new Date(date);
       const end = new Date(date);
       end.setDate(end.getDate() + 1);
-
       query.createdAt = { $gte: start, $lt: end };
     }
 
@@ -63,7 +59,6 @@ export const getBookings = async (req, res) => {
     }
 
     const bookings = await Booking.find(query).sort({ createdAt: -1 });
-
     res.json(bookings);
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -85,7 +80,7 @@ export const updateBookingStatus = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // 🔥 EMAIL WHEN CONFIRMED
+    // 🔥 EMAIL WHEN CONFIRMED (Uses Resend API with confirmation template)
     if (req.body.status === "confirmed") {
       await sendBookingEmail(booking);
     }
@@ -96,7 +91,6 @@ export const updateBookingStatus = async (req, res) => {
     }
 
     res.json(booking);
-
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });

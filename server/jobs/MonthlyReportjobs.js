@@ -2,7 +2,9 @@ import cron from "node-cron";
 import Booking from "../models/Booking.js";
 import Media from "../models/Media.js";
 import Client from "../models/Client.js";
-import transporter from "../config/email.js";
+
+// ✅ SWAPPED: Import your new Resend utility function instead of the old transporter
+import { sendEmail } from "../utils/sendEmail.js";
 
 // ===============================
 // MONTHLY ADMIN REPORT JOB
@@ -68,10 +70,10 @@ const sendMonthlyReport = async () => {
       </div>
     `;
 
-    // ================= SEND EMAIL =================
-    await transporter.sendMail({
-      from: `"Miray Visual System" <${process.env.EMAIL_USER}>`,
-      to: process.env.ADMIN_EMAIL, // 🔥 IMPORTANT
+    // ================= SEND EMAIL (RESEND API) =================
+    // ✅ SWAPPED: Uses your modern HTTPS Resend wrapper function
+    await sendEmail({
+      to: process.env.ADMIN_EMAIL, 
       subject: "📊 Monthly Studio Report",
       html,
     });

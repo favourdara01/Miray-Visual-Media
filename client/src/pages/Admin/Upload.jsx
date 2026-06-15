@@ -11,7 +11,7 @@ const PortfolioUploader = () => {
   // ✅ NEW: modal state
   const [showModal, setShowModal] = useState(false);
 
-const token = sessionStorage.getItem("accessToken") || "";
+  const token = sessionStorage.getItem("accessToken") || "";
 
   // ================= DROPZONE =================
   const onDrop = (acceptedFiles) => {
@@ -56,9 +56,6 @@ const token = sessionStorage.getItem("accessToken") || "";
           },
         }
       );
-
-      // ❌ REMOVED ALERT
-      // alert("Upload successful 🚀");
 
       // ✅ SHOW MODAL INSTEAD
       setShowModal(true);
@@ -183,7 +180,8 @@ const token = sessionStorage.getItem("accessToken") || "";
           </div>
 
           <p className="mt-2 text-sm text-gray-600">
-            Uploading... {progress}%</p>
+            Uploading... {progress}%
+          </p>
         </div>
       )}
 
@@ -195,24 +193,32 @@ const token = sessionStorage.getItem("accessToken") || "";
         Upload Portfolio
       </button>
 
-      {/* ================= SUCCESS MODAL ================= */}
+      {/* ================= BEAUTIFIED SUCCESS MODAL ================= */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-white p-6 rounded-xl shadow-lg text-center w-[300px]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm p-8 text-center transition-transform duration-300 transform scale-100 bg-white border border-gray-100 shadow-2xl rounded-2xl">
+            
+            {/* Success Icon Badge */}
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 rounded-full bg-green-50">
+              <span className="text-3xl">🚀</span>
+            </div>
 
-            <h2 className="text-lg font-bold text-[#015103]">
-              Upload Successful 🚀
-            </h2>
+            {/* Modal Heading */}
+            <h3 className="text-xl font-bold text-[#015103] tracking-tight">
+              Upload Successful!
+            </h3>
 
-            <p className="mt-2 text-sm text-gray-500">
-              Your files have been uploaded successfully.
+            {/* Fixed Visibility Description Text */}
+            <p className="mt-3 text-sm font-medium leading-relaxed text-gray-600">
+              Your media files have been compiled and uploaded to the studio portfolio successfully.
             </p>
 
+            {/* Action Button */}
             <button
               onClick={() => setShowModal(false)}
-              className="mt-4 px-4 py-2 bg-[#FE8521] text-white rounded-lg"
+              className="mt-6 w-full px-5 py-3 bg-[#FE8521] hover:bg-[#e6761d] text-white font-semibold text-sm rounded-xl shadow-sm hover:shadow-md transition duration-200"
             >
-              Close
+              Acknowledge & Close
             </button>
 
           </div>

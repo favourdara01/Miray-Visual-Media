@@ -107,12 +107,15 @@ export default function Contact() {
             )}
           </form>
 
-          {/* MAP CARD */}
+          {/* MAP CARD (UPDATED TO LAGOS, NIGERIA) */}
           <div className="overflow-hidden border shadow-xl rounded-3xl border-black/5">
             <iframe
               title="map"
-              src="https://maps.google.com/maps?q=Abuja&t=&z=13&ie=UTF8&iwloc=&output=embed"
-              className="w-full h-full min-h-[420px]"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d253682.4631061732!2d3.1191410145265552!3d6.548376798031201!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1m5!1s0x103b8b2ae68280c1%3A0xdc9e87a3da9c4a01!2sLagos%2C%20Nigeria!5e0!3m2!1sen!2s!4v1700000000000!5m2!1sen!2s"
+              className="w-full h-full min-h-[420px] border-0"
+              allowFullScreen=""
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
             />
           </div>
 

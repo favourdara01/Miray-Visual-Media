@@ -40,7 +40,7 @@ useEffect(() => {
   const socket = io(import.meta.env.VITE_API_URL, {
     withCredentials: true,
     auth: { token },
-    transports: ["websocket", "polling"],
+    transports: ["polling", "websocket"],
   });
 
   socket.on("new-booking", (data) => {

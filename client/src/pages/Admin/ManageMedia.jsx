@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { useDropzone } from "react-dropzone";
@@ -27,7 +26,8 @@ export default function ManageMedia() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [storage, setStorage] = useState(null);
 
-
+  // Pull token from localStorage if not available in current scope
+  const token = localStorage.getItem("token");
 
   // ================= FETCH MEDIA =================
   const fetchMedia = async () => {
@@ -114,11 +114,18 @@ export default function ManageMedia() {
       multiple: true,
     });
 
-  // ================= DELETE =================
+  // ================= DELETE (UPDATED WITH MODAL & TOKEN) =================
   const deleteItem = async () => {
+    if (!deleteTarget) return;
+
     try {
       await api.delete(
-        `/media/${deleteTarget}`
+        `/media/${deleteTarget}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
       setDeleteTarget(null);
@@ -126,15 +133,22 @@ export default function ManageMedia() {
       fetchMedia();
       fetchStorage();
     } catch (err) {
-      console.error("Delete error:", err);
+      console.error("Delete error:", err.response?.data || err.message);
     }
   };
 
   const bulkDelete = async () => {
+    const confirmBulk = window.confirm(`Are you sure you want to delete these ${selected.length} items?`);
+    if (!confirmBulk) return;
+
     try {
       await Promise.all(
         selected.map((id) =>
-          api.delete(`/media/${id}`)
+          api.delete(`/media/${id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
         )
       );
 
@@ -143,7 +157,7 @@ export default function ManageMedia() {
       fetchMedia();
       fetchStorage();
     } catch (err) {
-      console.error("Bulk delete error:", err);
+      console.error("Bulk delete error:", err.response?.data || err.message);
     }
   };
 
@@ -207,7 +221,7 @@ export default function ManageMedia() {
               >
                 <input
                   type="checkbox"
-                  className="absolute top-3 left-3"
+                  className="absolute z-10 top-3 left-3"
                   checked={selected.includes(
                     m._id
                   )}
@@ -218,6 +232,7 @@ export default function ManageMedia() {
 
                 <div
                   onClick={() => setPreview(m)}
+                  className="cursor-pointer"
                 >
                   {m?.type === "image" ? (
                     <img
@@ -225,12 +240,12 @@ export default function ManageMedia() {
                         m?.url
                       )}
                       loading="lazy"
-                      className="object-cover w-full h-48"
+                      className="object-cover w-full h-48 rounded-t-2xl"
                     />
                   ) : (
                     <video
                       src={m?.url}
-                      className="object-cover w-full h-48"
+                      className="object-cover w-full h-48 rounded-t-2xl"
                     />
                   )}
                 </div>
@@ -243,7 +258,7 @@ export default function ManageMedia() {
                   onClick={() =>
                     setDeleteTarget(m._id)
                   }
-                  className="absolute px-2 py-1 text-xs text-white bg-red-500 top-2 right-2"
+                  className="absolute z-10 px-2 py-1 text-xs text-white bg-red-500 rounded top-2 right-2"
                 >
                   Delete
                 </button>
@@ -280,14 +295,14 @@ export default function ManageMedia() {
           onChange={(e) =>
             setSearch(e.target.value)
           }
-          className="p-2 border"
+          className="p-2 border rounded"
         />
 
         <select
           onChange={(e) =>
             setFilter(e.target.value)
           }
-          className="p-2 border"
+          className="p-2 border rounded"
         >
           <option value="all">All</option>
           <option value="image">
@@ -301,7 +316,7 @@ export default function ManageMedia() {
         {selected.length > 0 && (
           <button
             onClick={bulkDelete}
-            className="px-3 py-2 text-white bg-red-500"
+            className="px-3 py-2 text-white bg-red-500 rounded"
           >
             Delete ({selected.length})
           </button>
@@ -310,16 +325,16 @@ export default function ManageMedia() {
 
       <div
         {...getRootProps()}
-        className="p-6 border"
+        className="p-6 text-center transition border-2 border-gray-300 border-dashed cursor-pointer rounded-2xl bg-gray-50 hover:bg-gray-100"
       >
         <input {...getInputProps()} />
 
-        <p>
+        <p className="text-gray-600">
           Drag & drop or click to upload
         </p>
 
         {uploading && (
-          <p>{progress}% uploading...</p>
+          <p className="mt-2 font-semibold text-blue-500">{progress}% uploading...</p>
         )}
       </div>
 
@@ -340,23 +355,49 @@ export default function ManageMedia() {
 
       {preview && (
         <div
-          className="fixed inset-0 flex items-center justify-center bg-black/80"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
           onClick={() => setPreview(null)}
         >
           {preview.type === "image" ? (
             <img
               src={preview.url}
-              className="max-h-[80vh]"
+              className="max-h-[80vh] max-w-[90vw] rounded-lg"
             />
           ) : (
             <video
               src={preview.url}
               controls
+              className="max-h-[80vh] max-w-[90vw]"
             />
           )}
         </div>
       )}
-    </div>
-    );
 
-  }
+      {/* ================= CONFIRMATION MODAL ================= */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm p-6 mx-4 text-center bg-white shadow-xl rounded-2xl">
+            <h3 className="mb-2 text-xl font-bold text-gray-900">Delete Media File?</h3>
+            <p className="mb-6 text-sm text-gray-500">
+              This action is permanent. The file will be removed from your database and Cloudinary storage instantly.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button 
+                onClick={() => setDeleteTarget(null)} 
+                className="px-4 py-2 text-sm font-medium text-gray-700 transition bg-gray-100 rounded-xl hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={deleteItem} 
+                className="px-4 py-2 text-sm font-medium text-white transition bg-red-600 rounded-xl hover:bg-red-700"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

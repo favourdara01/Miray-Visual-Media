@@ -8,6 +8,7 @@ import Booking from "../components/Booking";
 import Footer from "../components/Footer";
 import Contact from "../components/Contact";
 import Pricing from "../components/Pricing";
+import VideoAndTestimonialSuite from "../components/Testimonial";
 
 const Home = () => {
   return (
@@ -18,6 +19,7 @@ const Home = () => {
       <Services />
       <Team />
       <GalleryPreview />
+      <VideoAndTestimonialSuite />
       <Pricing />
       <Booking />
       <Contact/>

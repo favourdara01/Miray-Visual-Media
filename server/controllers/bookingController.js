@@ -1,5 +1,5 @@
 import Booking from "../models/Booking.js";
-// ✅ Double-check that this path accurately goes to your file containing the Resend functions!
+// ✅ Double-check that this path accurately goes to your file containing the mailer functions!
 import { sendBookingEmail } from "../utils/sendEmail.js"; 
 
 // ==========================
@@ -7,7 +7,8 @@ import { sendBookingEmail } from "../utils/sendEmail.js";
 // ==========================
 export const createBooking = async (req, res) => {
   try {
-    const { name, email, service, date, message } = req.body;
+    // ✅ ADDED: "phone" destructured safely from frontend payload parameters
+    const { name, email, phone, service, date, message } = req.body;
 
     if (!name || !email || !service || !date) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -16,6 +17,7 @@ export const createBooking = async (req, res) => {
     const booking = await Booking.create({
       name,
       email,
+      phone: phone || "", // ✅ ADDED: Saved to your MongoDB database pipeline instance
       service,
       date,
       message: message || "",
@@ -27,7 +29,7 @@ export const createBooking = async (req, res) => {
       req.io.emit("new-booking", booking);
     }
 
-    // 🔥 EMAIL TO CLIENT (Uses Resend API now)
+    // 🔥 EMAIL TO CLIENT (Pending acknowledgment notification)
     sendBookingEmail(booking).catch(console.error);
 
     res.status(201).json(booking);
@@ -80,9 +82,29 @@ export const updateBookingStatus = async (req, res) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // 🔥 EMAIL WHEN CONFIRMED (Uses Resend API with confirmation template)
+    // 🔥 EMAIL WHEN CONFIRMED WITH GOOGLE CALENDAR EMBED
     if (req.body.status === "confirmed") {
-      await sendBookingEmail(booking);
+      try {
+        // Formats database date to structural ISO requirements (stretching out dashes/colons)
+        const calendarDate = new Date(booking.date)
+          .toISOString()
+          .replace(/-|:|\.\d\d\d/g, "")
+          .split("T")[0];
+
+        // Compiles your template URL safely with string parameters
+        const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+          "Miray Visual Photography Shoot: " + booking.service
+        )}&dates=${calendarDate}/${calendarDate}&details=${encodeURIComponent(
+          "Your professional studio production session with Miray Visual is confirmed! Location: Lagos, Nigeria."
+        )}`;
+
+        // Attaches calendar link directly to the booking document temporarily before it hits your mail file
+        booking.googleCalendarUrl = googleCalendarUrl;
+        
+        await sendBookingEmail(booking);
+      } catch (emailErr) {
+        console.error("Email generation or transmission failure:", emailErr.message);
+      }
     }
 
     // 🔥 REAL-TIME UPDATE

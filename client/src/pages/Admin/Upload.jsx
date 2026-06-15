@@ -1,6 +1,8 @@
 import { useState, useRef } from "react";
 import api from "../../api/axios";
 import { useDropzone } from "react-dropzone";
+// ✅ NEW: Import the browser compression tool
+import imageCompression from "browser-image-compression";
 
 const PortfolioUploader = () => {
   const [files, setFiles] = useState([]);
@@ -9,42 +11,85 @@ const PortfolioUploader = () => {
   const [progress, setProgress] = useState(0);
   const [currentFileIndex, setCurrentFileIndex] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false); // ✅ NEW: Compression loader state
 
   // Modals state
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showErrorModal, setShowErrorModal] = useState(false);
+
+  // Tracks the total count of the initial batch for the progress text
+  const [totalBatchCount, setTotalBatchCount] = useState(0);
+  const [completedCount, setCompletedCount] = useState(0);
 
   // Use a ref to track if the user clicked cancel mid-upload
   const isCancelledRef = useRef(false);
 
   const token = sessionStorage.getItem("accessToken") || "";
 
-  // ================= DROPZONE =================
-  const onDrop = (acceptedFiles) => {
-    if (isUploading) return;
-    setFiles(acceptedFiles);
+  // ================= DROPZONE + AUTO-COMPRESSION =================
+  const onDrop = async (acceptedFiles) => {
+    if (isUploading || isCompressing) return;
+
+    setIsCompressing(true);
+    const optimizedFilesQueue = [];
+
+    // Settings for the compression engine
+    const compressionOptions = {
+      maxSizeMB: 1.5,          // ✅ Limits image size to a max of 1.5MB (perfect for high-quality portfolio view)
+      maxWidthOrHeight: 2560,  // ✅ Preserves 2K/4K crispness for studio work
+      useWebWorker: true       // ✅ Runs in background thread so the browser UI doesn't freeze or stutter
+    };
+
+    try {
+      for (const file of acceptedFiles) {
+        // Skip compression for videos, only compress images
+        if (file.type.startsWith("video")) {
+          optimizedFilesQueue.push(file);
+        } else {
+          console.log(`Original size: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
+          
+          // Execute compression directly on client machine
+          const compressedBlob = await imageCompression(file, compressionOptions);
+          
+          // Convert Blob back to a standard File object so FormData accepts it cleanly
+          const compressedFile = new File([compressedBlob], file.name, {
+            type: file.type,
+            lastModified: Date.now()
+          });
+
+          console.log(`Compressed size: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
+          optimizedFilesQueue.push(compressedFile);
+        }
+      }
+
+      setFiles(optimizedFilesQueue);
+      setTotalBatchCount(optimizedFilesQueue.length);
+      setCompletedCount(0);
+    } catch (error) {
+      console.error("Image pre-processing failed:", error);
+      alert("Error processing images. Try uploading fewer files at once.");
+    } finally {
+      setIsCompressing(false);
+    }
   };
 
   const { getRootProps, getInputProps, isDragActive } =
-    useDropzone({ onDrop, disabled: isUploading });
+    useDropzone({ onDrop, disabled: isUploading || isCompressing });
 
   // ================= UPLOAD QUEUE ENGINE =================
-  const handleUpload = async () => {
-    if (!files.length) return alert("Select files first");
-    
+  const handleUploadQueue = async (filesToUpload, startingIndexFromBatch = 0) => {
     setIsUploading(true);
     isCancelledRef.current = false;
     setProgress(0);
 
-    // Loop through files sequentially (one-by-one) to prevent server memory lag
-    for (let i = 0; i < files.length; i++) {
+    for (let i = 0; i < filesToUpload.length; i++) {
       if (isCancelledRef.current) break;
 
       setCurrentFileIndex(i);
-      const file = files[i];
+      const file = filesToUpload[i];
       const form = new FormData();
       
-      form.append("files", file); // Appending a single file to keep network payloads lightweight
+      form.append("files", file); 
       form.append("section", mainCategory);
       form.append("isPortfolio", "true");
 
@@ -60,36 +105,46 @@ const PortfolioUploader = () => {
             setProgress(percent);
           },
         });
+
+        // Safe tracking of completed items across retries
+        setCompletedCount((prev) => prev + 1);
+
       } catch (err) {
         console.error(err);
         setIsUploading(false);
-        // Save where we failed so retry can pick up from this exact index
-        setCurrentFileIndex(i); 
+        setProgress(0);
+
+        // Slice the array so 'files' state ONLY contains the failed file and remaining queue
+        const remainingQueue = filesToUpload.slice(i);
+        setFiles(remainingQueue);
+        setCurrentFileIndex(0); 
+
         setShowErrorModal(true);
-        return; // Halt execution immediately
+        return; 
       }
     }
 
-    // Checking if loop finished successfully or was cut short by a cancellation request
     if (!isCancelledRef.current) {
       setShowSuccessModal(true);
       setFiles([]);
       setMainCategory("Events");
       setSubCategory("Wedding");
+      setCompletedCount(0);
+      setTotalBatchCount(0);
     }
     
     setIsUploading(false);
     setProgress(0);
   };
 
+  const startInitialUpload = () => {
+    handleUploadQueue(files, 0);
+  };
+
   // ================= RETRY LOGIC =================
   const handleRetry = () => {
     setShowErrorModal(false);
-    // Slice array to only include remaining un-uploaded items
-    const remainingFiles = files.slice(currentFileIndex);
-    setFiles(remainingFiles);
-    // Re-trigger upload loop instantly
-    setTimeout(() => handleUpload(), 100); 
+    setTimeout(() => handleUploadQueue(files, completedCount), 100); 
   };
 
   const handleCancelAndClear = () => {
@@ -97,6 +152,8 @@ const PortfolioUploader = () => {
     setIsUploading(false);
     setProgress(0);
     setFiles([]);
+    setCompletedCount(0);
+    setTotalBatchCount(0);
     setShowErrorModal(false);
   };
 
@@ -112,39 +169,42 @@ const PortfolioUploader = () => {
       <div
         {...getRootProps()}
         className={`p-12 border-2 border-dashed rounded-xl text-center transition ${
-          isUploading ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200" :
+          isUploading || isCompressing ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-200" :
           isDragActive
             ? "bg-orange-50 border-[#FE8521]"
             : "border-gray-300 hover:border-[#FE8521] hover:bg-orange-50/40 cursor-pointer"
         }`}
       >
         <input {...getInputProps()} />
-        <p className="text-gray-600">Drag & drop images/videos here</p>
-        {!isUploading && (
-          <p className="mt-2 text-sm text-[#FE8521] font-medium">or click to select files</p>
+        {isCompressing ? (
+          <div className="space-y-2">
+            <p className="font-semibold text-gray-700 animate-pulse">⚡ Optimizing & Compressing Media...</p>
+            <p className="text-xs text-gray-500">Shrinking payloads locally to guarantee safe Render delivery</p>
+          </div>
+        ) : (
+          <>
+            <p className="text-gray-600">Drag & drop images/videos here</p>
+            {!isUploading && (
+              <p className="mt-2 text-sm text-[#FE8521] font-medium">or click to select files</p>
+            )}
+          </>
         )}
       </div>
 
       {/* PREVIEW */}
-      {files.length > 0 && (
+      {files.length > 0 && !isCompressing && (
         <div className="grid grid-cols-3 gap-3 p-1 mt-6 overflow-y-auto max-h-60">
           {files.map((file, i) => (
             <div
               key={i}
               className={`overflow-hidden bg-gray-100 rounded-xl relative border-2 ${
-                isUploading && i === currentFileIndex ? "border-[#FE8521]" : 
-                isUploading && i < currentFileIndex ? "border-green-500 opacity-40" : "border-transparent"
+                isUploading && i === currentFileIndex ? "border-[#FE8521]" : "border-transparent"
               }`}
             >
               {file.type.startsWith("video") ? (
                 <video src={URL.createObjectURL(file)} className="object-cover w-full h-32" />
               ) : (
                 <img src={URL.createObjectURL(file)} className="object-cover w-full h-32" />
-              )}
-              {isUploading && i < currentFileIndex && (
-                <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-green-600 bg-green-500/10">
-                  ✓ Done
-                </div>
               )}
             </div>
           ))}
@@ -155,7 +215,7 @@ const PortfolioUploader = () => {
       <div className="mt-6">
         <label className="block mb-2 text-sm font-medium text-gray-700">Main Category</label>
         <select
-          disabled={isUploading}
+          disabled={isUploading || isCompressing}
           value={mainCategory}
           onChange={(e) => setMainCategory(e.target.value)}
           className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FE8521] disabled:bg-gray-100"
@@ -171,7 +231,7 @@ const PortfolioUploader = () => {
       <div className="mt-4">
         <label className="block mb-2 text-sm font-medium text-gray-700">Sub Category</label>
         <select
-          disabled={isUploading}
+          disabled={isUploading || isCompressing}
           value={subCategory}
           onChange={(e) => setSubCategory(e.target.value)}
           className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FE8521] disabled:bg-gray-100"
@@ -194,19 +254,15 @@ const PortfolioUploader = () => {
       {isUploading && (
         <div className="p-4 mt-6 border bg-gray-50 rounded-xl">
           <div className="flex justify-between mb-1 text-xs font-medium text-gray-600">
-            <span>Uploading file {currentFileIndex + 1} of {files.length}</span>
+            <span>Uploading optimized file {completedCount + 1} of {totalBatchCount}</span>
             <span>{progress}%</span>
           </div>
           <div className="h-2 overflow-hidden bg-gray-200 rounded-full">
             <div className="h-2 bg-[#FE8521] transition-all duration-300" style={{ width: `${progress}%` }} />
           </div>
           
-          {/* ✅ CANCEL BUTTON WORKING LIVE */}
           <button
-            onClick={() => {
-              isCancelledRef.current = true;
-              handleCancelAndClear();
-            }}
+            onClick={handleCancelAndClear}
             className="px-3 py-1 mt-3 text-xs font-semibold text-red-600 transition rounded-lg bg-red-50 hover:bg-red-100"
           >
             ✕ Cancel Entire Upload
@@ -215,12 +271,12 @@ const PortfolioUploader = () => {
       )}
 
       {/* ACTIONS BUTTON */}
-      {!isUploading && (
+      {!isUploading && !isCompressing && (
         <button
-          onClick={handleUpload}
+          onClick={startInitialUpload}
           className="w-full p-3 mt-6 text-white rounded-xl bg-[#FE8521] hover:bg-[#e6761d] transition shadow-sm font-semibold"
         >
-          Upload Portfolio ({files.length} Files)
+          {completedCount > 0 ? `Resume Upload (${files.length} Remaining)` : `Upload Portfolio (${files.length} Files)`}
         </button>
       )}
 
@@ -245,7 +301,7 @@ const PortfolioUploader = () => {
         </div>
       )}
 
-      {/* ================= ✅ NEW: ERROR / RETRY MODAL ================= */}
+      {/* ================= ERROR / RETRY MODAL ================= */}
       {showErrorModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-sm p-6 text-center bg-white border shadow-2xl rounded-2xl border-red-50">
@@ -253,8 +309,12 @@ const PortfolioUploader = () => {
               <span className="text-2xl">⚠️</span>
             </div>
             <h3 className="text-lg font-bold text-red-700">Upload Process Halted</h3>
-            <p className="mt-2 text-sm text-gray-600">
-              An error occurred while uploading file index <strong>{currentFileIndex + 1}</strong>. Would you like to retry the remaining files or cancel?
+            <p className="p-3 mt-2 text-sm text-left text-gray-600 border border-gray-100 bg-gray-50 rounded-xl">
+              • Completed items: <span className="font-semibold text-green-600">{completedCount} saved successfully ✅</span><br />
+              • Current error: <span className="font-medium text-red-500">Failed at file index {completedCount + 1}</span>
+            </p>
+            <p className="mt-3 text-xs text-gray-500">
+              Would you like to retry the failed file and remaining pipeline queue, or stop and clear the dashboard?
             </p>
             <div className="flex gap-3 mt-5">
               <button

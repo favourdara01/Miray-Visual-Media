@@ -16,32 +16,23 @@ export default function AdminGalleryView() {
   const [selected, setSelected] = useState([]);
   const [storage, setStorage] = useState(null);
 
-
+  const token = sessionStorage.getItem("accessToken") || localStorage.getItem("token") || "";
 
   // ================= FETCH =================
   const fetchMedia = async () => {
-    const res = await api.get(
-      `/media/gallery/${id}`
-    );
+    const res = await api.get(`/media/gallery/${id}`);
     setMedia(res.data);
   };
 
   const fetchGalleryMeta = async () => {
-    const res = await api.get(
-      `/gallery/${id}`
-    );
-
+    const res = await api.get(`/gallery/${id}`);
     setCover(res.data.coverImage);
     setClient(res.data.client);
   };
 
-  // 🔥 REAL CLOUDINARY STORAGE
   const fetchStorage = async () => {
     try {
-      const res = await api.get(
-        "/media/storage"
-      );
-
+      const res = await api.get("/media/storage");
       setStorage(res.data?.storage || null);
     } catch (err) {
       console.error(err);
@@ -57,14 +48,13 @@ export default function AdminGalleryView() {
   // ================= DELETE =================
   const confirmDelete = async () => {
     const target = deleteTarget;
-
     setMedia((prev) => prev.filter((m) => m._id !== target._id));
     setDeleteTarget(null);
 
     try {
-      await api.delete(
-        `/media/${target._id}`
-      );
+      await api.delete(`/media/${target._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
     } catch (err) {
       fetchMedia();
     }
@@ -72,39 +62,42 @@ export default function AdminGalleryView() {
 
   // ================= COVER =================
   const setAsCover = async (mediaId) => {
-    await api.put(
-      `/gallery/${id}/cover`,
-      {
-        imageUrl: media.find((m) => m._id === mediaId)?.url,
-      }
-    );
-
-    fetchGalleryMeta();
-    setSettings(null);
+    try {
+      await api.put(
+        `/gallery/${id}/cover`,
+        { imageUrl: media.find((m) => m._id === mediaId)?.url },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchGalleryMeta();
+      setSettings(null);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // ================= SELECT =================
   const toggleSelect = (id) => {
     setSelected((prev) =>
-      prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   };
 
   // ================= BULK DELETE =================
   const bulkDelete = async () => {
-    const backup = [...media];
+    const confirmBulk = window.confirm(`Are you sure you want to delete these ${selected.length} items?`);
+    if (!confirmBulk) return;
 
-    setMedia((prev) =>
-      prev.filter((m) => !selected.includes(m._id))
-    );
+    const backup = [...media];
+    setMedia((prev) => prev.filter((m) => !selected.includes(m._id)));
+    const itemsToDelete = [...selected];
     setSelected([]);
 
     try {
       await Promise.all(
-        selected.map((id) =>
-          api.delete(`/media/${id}`)
+        itemsToDelete.map((id) =>
+          api.delete(`/media/${id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          })
         )
       );
     } catch (err) {
@@ -118,18 +111,13 @@ export default function AdminGalleryView() {
     if (!files.length) return;
 
     const formData = new FormData();
-    Array.from(files).forEach((file) =>
-      formData.append("files", file)
-    );
+    Array.from(files).forEach((file) => formData.append("files", file));
     formData.append("galleryId", id);
 
     try {
-      await api.post(
-        "/media/upload",
-        formData,
-        
-      );
-
+      await api.post("/media/upload", formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       fetchMedia();
     } catch (err) {
       console.error(err);
@@ -144,177 +132,235 @@ export default function AdminGalleryView() {
       day: "numeric",
     });
 
+  // ================= CHRONOLOGICAL TIMELINE SEPARATOR (3 MONTHS) =================
+  const recentMedia = [];
+  const olderMedia = [];
+
+  media.forEach((item) => {
+    const itemDate = new Date(item.createdAt);
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    if (itemDate >= threeMonthsAgo) {
+      recentMedia.push(item);
+    } else {
+      olderMedia.push(item);
+    }
+  });
+
+  const renderMediaCard = (item, isRecent) => (
+    <div
+      key={item._id}
+      className="relative overflow-hidden transition-all duration-300 transform border border-gray-100 shadow-sm group bg-white/90 backdrop-blur-md rounded-2xl hover:shadow-xl hover:border-orange-200/50 hover:-translate-y-1"
+    >
+      {/* Selection Control Checkbox Overlay */}
+      <input
+        type="checkbox"
+        className="absolute z-20 top-3 left-3 w-4 h-4 rounded border-gray-300 text-[#FE8521] focus:ring-[#FE8521] cursor-pointer"
+        checked={selected.includes(item._id)}
+        onChange={() => toggleSelect(item._id)}
+      />
+
+      {/* Frame Wrapper Element Container */}
+      <div className="relative h-64 overflow-hidden bg-gray-50">
+        <img
+          src={item.url}
+          alt="Gallery asset"
+          onClick={() => setSelectedImage(item)}
+          className="object-cover w-full h-full transition-transform duration-500 cursor-pointer group-hover:scale-102"
+        />
+
+        {/* Dynamic Timeline Context Ribbon Item Badges */}
+        <span
+          className={`absolute bottom-3 left-3 text-[9px] uppercase tracking-wider font-extrabold px-2 py-0.5 rounded-full shadow-xs backdrop-blur-md text-white z-10 ${
+            isRecent ? "bg-green-600/70" : "bg-amber-600/70"
+          }`}
+        >
+          {isRecent ? "Recent" : "Archive"}
+        </span>
+      </div>
+
+      {/* Interactive Trigger Overlay Utilities Interface Layout Control */}
+      <div className="flex items-center justify-between p-3 bg-white border-t border-gray-50 rounded-b-2xl">
+        <p className="text-[11px] font-medium text-gray-400">
+          📅 {item.createdAt && formatDate(item.createdAt)}
+        </p>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSettings(item)}
+            className="p-1.5 text-xs font-semibold rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition"
+            title="Asset Settings"
+          >
+            ⚙️
+          </button>
+          <button
+            onClick={() => setDeleteTarget(item)}
+            className="p-1.5 text-xs font-semibold text-red-500 hover:bg-red-50 rounded-lg transition"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#f8faf8] to-white">
-
-      {/* HERO */}
-      <div className="relative flex flex-col items-center justify-center text-center text-white h-[380px]">
-
+    <div
+      className="min-h-screen pb-24 bg-gray-50"
+      style={{
+        background: "linear-gradient(to bottom, #f8faf8 0%, #ffffff 50%, #eef6ee 100%)",
+      }}
+    >
+      {/* HERO BANNER WITH DYNAMIC BACKGROUND OVERLAY PORT */}
+      <div className="relative flex flex-col items-center justify-center text-center text-white h-[360px] overflow-hidden shadow-lg bg-slate-900">
         {cover && (
-          <img
-            src={cover}
-            className="absolute inset-0 object-cover w-full h-full"
-          />
+          <img src={cover} className="absolute inset-0 object-cover w-full h-full transform scale-102 blur-xs opacity-60" alt="Gallery cover" />
         )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
 
-        <div className="absolute inset-0 bg-black/60" />
-
-        <div className="relative z-10">
-
-          <h1 className="text-4xl font-bold">
+        <div className="relative z-10 max-w-xl px-4">
+          <span className="bg-white/10 text-white border border-white/10 text-[10px] tracking-widest font-extrabold uppercase px-3 py-1 rounded-full mb-3 inline-block backdrop-blur-md">
+            Production Asset Workspace
+          </span>
+          <h1 className="text-4xl font-black tracking-tight md:text-5xl drop-shadow-sm">
             {client?.name} {client?.surname}
           </h1>
-
-          {/* RECTANGULAR BUTTON */}
-          <button className="px-6 py-3 mt-5 text-black bg-white rounded">
-            View Gallery
+          <button className="px-5 py-2.5 mt-6 font-bold text-xs uppercase tracking-wider text-gray-900 bg-white rounded-full shadow-md hover:bg-gray-50 hover:shadow-xl transition transform hover:-translate-y-0.5 duration-200">
+            View Live Gallery
           </button>
-
         </div>
       </div>
 
-      {/* HEADER */}
-      <div className="flex items-center justify-between p-6">
-
+      {/* FIXED SYSTEM MANAGEMENT CONTEXT CONTROL BAR BAR */}
+      <div className="flex flex-col gap-4 p-4 px-6 mx-auto mt-8 border border-gray-100 shadow-xs max-w-7xl sm:flex-row sm:items-center sm:justify-between bg-white/70 backdrop-blur-md rounded-2xl">
         <div>
-          <h2 className="text-xl font-semibold text-[#015103]">
-            Gallery ({media.length})
+          <h2 className="text-lg font-bold text-[#015103] tracking-tight">
+            Gallery Assets Collection ({media.length})
           </h2>
-
-          {/* REAL CLOUDINARY STORAGE */}
           {storage && (
-            <p className="text-sm text-gray-500">
-              Cloudinary Storage:{" "}
-              {storage.used || 0} MB / {storage.limit || "∞"}
+            <p className="text-xs text-gray-400 font-medium mt-0.5">
+              Cloud Vault Balance: <span className="font-mono text-gray-600">{storage.used || 0} MB</span> / {storage.limit || "∞"} MB
             </p>
           )}
         </div>
 
-        {/* UPLOAD BUTTON IMPROVED */}
-        <label className="px-4 py-2 text-white bg-[#FE8521] rounded cursor-pointer hover:bg-orange-600">
-          Choose Files
-          <input
-            type="file"
-            multiple
-            onChange={uploadFiles}
-            className="hidden"
-          />
-        </label>
+        <div className="flex items-center gap-3">
+          {selected.length > 0 && (
+            <button
+              onClick={bulkDelete}
+              className="px-4 py-2 text-xs font-bold tracking-wider text-white uppercase transition bg-red-600 shadow-md hover:bg-red-700 rounded-xl"
+            >
+              Batch Delete ({selected.length})
+            </button>
+          )}
 
-        {selected.length > 0 && (
-          <button
-            onClick={bulkDelete}
-            className="px-4 py-2 text-white bg-red-500 rounded"
-          >
-            Delete
-          </button>
+          <label className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-[#FE8521] hover:bg-[#e6761d] rounded-xl cursor-pointer transition shadow-md hover:shadow-lg">
+            📥 Add Media Batch
+            <input type="file" multiple onChange={uploadFiles} className="hidden" />
+          </label>
+        </div>
+      </div>
+
+      {/* GRID DISPATCH CHRONOLOGICAL CHANNELS VIEWPORTS */}
+      <div className="px-6 mx-auto mt-10 space-y-12 max-w-7xl">
+        {recentMedia.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <h3 className="text-base font-bold tracking-tight text-gray-800">Recent Uploads</h3>
+              <span className="text-[10px] font-semibold px-2 py-0.5 bg-green-50 text-green-700 border border-green-100 rounded-full">Within 3 Months</span>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {recentMedia.map((item) => renderMediaCard(item, true))}
+            </div>
+          </div>
+        )}
+
+        {olderMedia.length > 0 && (
+          <div>
+            <div className="flex items-center gap-3 mb-5">
+              <h3 className="text-base font-bold tracking-tight text-gray-400">Older Archives</h3>
+              <span className="text-[10px] font-semibold px-2 py-0.5 bg-gray-50 text-gray-500 border border-gray-200 rounded-full">Older than 3 Months</span>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 opacity-85">
+              {olderMedia.map((item) => renderMediaCard(item, false))}
+            </div>
+          </div>
+        )}
+
+        {media.length === 0 && (
+          <div className="py-16 text-center border-2 border-gray-200 border-dashed bg-white/40 rounded-3xl">
+            <span className="block mb-2 text-3xl opacity-60">🖼️</span>
+            <p className="text-sm font-semibold text-gray-500">Workspace bucket is empty</p>
+            <p className="text-xs text-gray-400 mt-0.5">Initialize your production upload stream pipelines above.</p>
+          </div>
         )}
       </div>
 
-      {/* GRID */}
-      <div className="grid gap-4 p-6 md:grid-cols-3 lg:grid-cols-4">
-
-        {media.map((item) => (
-          <div key={item._id} className="relative bg-white rounded shadow">
-
-            <input
-              type="checkbox"
-              className="absolute z-10 top-2 left-2"
-              checked={selected.includes(item._id)}
-              onChange={() => toggleSelect(item._id)}
-            />
-
-            <img
-              src={item.url}
-              onClick={() => setSelectedImage(item)}
-              className="object-cover w-full h-64 cursor-pointer"
-            />
-
-            {/* DATE DISPLAY */}
-            <p className="px-2 py-1 text-xs text-gray-500">
-              {item.createdAt && formatDate(item.createdAt)}
-            </p>
-
-            <button
-              onClick={() => setSettings(item)}
-              className="absolute top-2 right-2"
-            >
-              ⚙️
-            </button>
-
-            <button
-              onClick={() => setDeleteTarget(item)}
-              className="absolute text-red-500 bottom-2 right-2"
-            >
-              Delete
-            </button>
-
-          </div>
-        ))}
-      </div>
-
-      {/* FULLSCREEN (EASY CLOSE) */}
+      {/* ================= LIGHTBOX PREVIEW SYSTEM ================= */}
       {selectedImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 bg-black/95 backdrop-blur-md"
           onClick={() => setSelectedImage(null)}
         >
-          <img
-            src={selectedImage.url}
-            className="max-h-[85vh]"
-          />
+          <img src={selectedImage.url} className="max-h-[85vh] max-w-[90vw] object-contain rounded-lg shadow-2xl" alt="Preview expansion" />
+          <p className="absolute bottom-6 text-xs font-semibold tracking-wide text-white/50 bg-white/5 px-3 py-1.5 rounded-full border border-white/5">
+            Click Anywhere to Minimize Workspace
+          </p>
         </div>
       )}
 
-      {/* DELETE MODAL (IMPROVED LIKE OTHER PAGE) */}
+      {/* ================= DELETION CONFIRMATION INTERCEPT OVERLAY ================= */}
       {deleteTarget && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-
-          <div className="p-6 bg-white rounded-xl w-[300px] text-center">
-
-            <p className="mb-4">
-              Delete this image?
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm p-6 text-center bg-white border shadow-2xl rounded-2xl border-red-50">
+            <div className="flex items-center justify-center mx-auto mb-4 rounded-full h-14 w-14 bg-red-50">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <h3 className="text-lg font-bold tracking-tight text-red-700">Purge Media Asset?</h3>
+            <p className="mt-2 text-xs font-medium leading-relaxed text-gray-500">
+              This action is permanent. The asset will be removed from your cloud storage vault and linked portfolio directories instantly.
             </p>
-
-            <div className="flex justify-center gap-3">
-
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 text-white bg-red-500 rounded"
-              >
-                Yes
-              </button>
-
+            <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 bg-gray-200 rounded"
+                className="w-1/2 px-4 py-2.5 text-xs font-bold tracking-wider uppercase text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
               >
-                No
+                Cancel
               </button>
-
+              <button
+                onClick={deleteItem}
+                className="w-1/2 px-4 py-2.5 text-xs font-bold tracking-wider uppercase text-white bg-red-600 hover:bg-red-700 rounded-xl transition shadow-md"
+              >
+                Yes, Purge
+              </button>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* SETTINGS */}
+      {/* ================= ASSET SPECIFIC PARAMETERS CONFIGURATION POPUP ================= */}
       {settings && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/60">
-          <div className="p-6 bg-white rounded">
-
-            <button onClick={() => setAsCover(settings._id)}>
-              Set as Cover
-            </button>
-
-            <button onClick={() => setSettings(null)}>
-              Close
-            </button>
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="w-full max-w-xs p-6 text-center bg-white border border-gray-100 shadow-2xl rounded-2xl">
+            <h3 className="mb-4 text-base font-bold tracking-tight text-gray-800">Asset Options</h3>
+           <div className="space-y-2">
+              <button
+                onClick={() => setAsCover(settings._id)}
+                className="w-full py-2.5 font-bold text-xs tracking-wider uppercase text-white bg-[#015103] hover:bg-[#0c3f0d] rounded-xl transition shadow-sm"
+              >
+                Set as Album Cover
+              </button>
+              <button
+                onClick={() => setSettings(null)}
+                className="w-full py-2.5 font-bold text-xs tracking-wider uppercase text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition"
+              >
+                Dismiss Menu
+              </button>
+            </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

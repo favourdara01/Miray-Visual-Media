@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios";
+import bookin from "../assets/bookin.jpg";
 
 export default function Booking() {
   const [formData, setFormData] = useState({
@@ -63,7 +64,7 @@ export default function Booking() {
         {/* IMAGE SIDE */}
         <div className="h-[500px] rounded-3xl overflow-hidden shadow-xl">
           <img
-            src="src/assets/about.jpg"
+            src={bookin}
             alt="booking"
             className="object-cover w-full h-full transition duration-700 hover:scale-105"
           />

@@ -22,9 +22,9 @@ export default function Services() {
       icon: FaRing,
     },
     {
-      title: "Birthday Shoots",
+      title: "Content Creation",
       description:
-        "Vibrant and memorable birthday sessions tailored to your celebration.",
+        "Vibrant and memorable contents tailored to your celebration.",
       icon: FaBirthdayCake,
     },
   ];

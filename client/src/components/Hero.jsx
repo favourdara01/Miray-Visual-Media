@@ -67,7 +67,7 @@ const Hero = () => {
             </button>
 
             <button
-              onClick={() => scrollTo("gallery")}
+              onClick={() => scrollTo("portfolio")}
               className="px-7 py-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white hover:bg-white hover:text-[#015103] transition duration-300"
             >
               View Gallery

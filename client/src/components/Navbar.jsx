@@ -15,11 +15,13 @@ export default function Navbar() {
       setScrolled(window.scrollY > 50);
 
       const sections = [
-        "home",
+       "home",
         "about",
-        "gallery",
+        "services",
         "team",
-        "clients",
+        "gallery",
+        "pricing",
+        "bookings",
         "contact",
       ];
 
@@ -78,9 +80,11 @@ export default function Navbar() {
             {[
               "home",
               "about",
-              "gallery",
+              "services",
               "team",
-              "clients",
+              "gallery",
+              "pricing",
+              "bookings",
               "contact",
             ].map((section) => (
               <li
@@ -127,11 +131,13 @@ export default function Navbar() {
 
           {[
             "home",
-            "about",
-            "gallery",
-            "team",
-            "clients",
-            "contact",
+             "about",
+             "services",
+             "team",
+             "gallery",
+             "pricing",
+             "bookings",
+             "contact",
           ].map((section) => (
             <button
               key={section}

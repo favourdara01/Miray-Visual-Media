@@ -93,6 +93,8 @@ app.use(
   mongoSanitize({
     replaceWith: "_",
     allowDots: true,
+    dryRun: false,
+    includeQueryParams: false, // 🔥 THIS IS THE CRITICAL LINE! It stops the crash instantly.
   })
 );
 

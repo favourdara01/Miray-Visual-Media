@@ -11,7 +11,7 @@ import {
   getMediaByClient,
   getMediaByGallery,
   getPortfolioMedia,
-  rearrangePortfolio
+  rearrangePortfolio,
   getStorage,
   getAnalytics
 } from "../controllers/mediaController.js";

@@ -10,6 +10,9 @@ import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import cookieParser from "cookie-parser";
 
+// 🛡️ SECURITY ADDITION: Prevent NoSQL Query Injection payloads
+import mongoSanitize from "express-mongo-sanitize";
+
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 // Routes
@@ -37,85 +40,102 @@ dotenv.config();
 if (!process.env.MONGO_URI) throw new Error("MONGO_URI missing");
 if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET missing");
 
-// ================= APP =================
+// ================= APP INITIALIZATION =================
 const app = express();
 
-// ✅ ADD THIS LINE RIGHT HERE BEFORE ANY MIDDLEWARE
+// ✅ Enforce trust proxy layer to read client IPs behind Render's routing proxies accurately
 app.set('trust proxy', 1);
 
 const server = http.createServer(app);
 
-// ================= SECURITY =================
-app.use(helmet());
+// ================= SECURITY DEFENSES =================
 
-// CORS (FIXED - SINGLE INSTANCE)
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://miray-visual-media-2.onrender.com",
-  process.env.CLIENT_URL
-];
-
+// 🛡️ SECURITY OVERHAUL: Configure Helmet without blocking Cloudinary images/videos
 app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true); // mobile apps / postman
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error("Not allowed by CORS"));
+  helmet({
+    crossOriginEmbedderPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://placehold.co"],
+        mediaSrc: ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://assets.mixkit.co"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+      },
     },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// BODY PARSERS (ONLY ONCE)
-app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: true }));
+// CORS CROSS-ORIGIN MATRIX ALIGNMENT
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://miray-visual-media-2.onrender.com",
+];
+if (process.env.CLIENT_URL) {
+  allowedOrigins.push(process.env.CLIENT_URL.replace(/\/$/, "")); // Trim trailing slash safely
+}
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // mobile apps / dev tools
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS parameters"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+
+// BODY PARSERS
+app.use(express.json({ limit: "10kb" })); // Caps memory payload bounds against DDoS flooding
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 
-// PREVENT PARAM POLLUTION
+// 🛡️ SECURITY ADDITION: Wash JSON body payloads of MongoDB special operators ($ and .)
+app.use(mongoSanitize());
+
+// PREVENT HTTP PARAMETER POLLUTION
 app.use(hpp());
 
-// RATE LIMITING (ONLY ONCE)
+// LAYER-1 RATE LIMITING
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
-    message: "Too many requests, try again later.",
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false,  // Disable the `X-RateLimit-*` headers
+    message: "Too many requests matching this IP sequence, please try again later.",
   })
 );
 
+// LAYER-2 rate limiter inclusion
 app.use(globalLimiter);
 
-// ================= SOCKET.IO =================
+// ================= SOCKET.IO ENGINE =================
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173",
-      "https://miray-visual-media-2.onrender.com",
-    ],
+    // ✅ FIXED: Dynamically syncs websocket validation rules to use your allowed list array parameters
+    origin: allowedOrigins,
     credentials: true,
   },
-  // ✅ FIX: Put 'polling' first. This establishes an instant HTTP handshake 
-  // that Render accepts, then upgrades seamlessly to a WebSocket.
   transports: ["polling", "websocket"], 
   allowEIO3: true,
 });
 
 io.on("connection", (socket) => {
-  console.log("⚡ Client connected:", socket.id);
+  console.log("⚡ Client connected to transmission node:", socket.id);
 
   socket.on("disconnect", () => {
-    console.log("❌ Client disconnected:", socket.id);
+    console.log("❌ Client disconnected from transmission node:", socket.id);
   });
 });
 
-// Attach io to requests
+// Attach socket context securely to middleware loop pipes
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -127,10 +147,11 @@ app.use(
   express.static("uploads", {
     index: false,
     redirect: false,
+    dotfiles: "ignore", // Stop requests from sniffing hidden platform properties
   })
 );
 
-// ================= ROUTES =================
+// ================= ROUTES MOUNT BAR =================
 app.use("/api/media", mediaRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/bookings", bookingRoutes);
@@ -144,35 +165,37 @@ app.use("/api/portfolio", portfolioRoutes);
 
 // ================= HEALTH CHECK =================
 app.get("/", (req, res) => {
-  res.send("API is running...");
+  res.send("API is running securely...");
 });
 
-// ================= CRON JOBS =================
+// ================= CRON REPORTING AUTOMATION =================
 startWeeklyReportJob();
 startMonthlyReportJob();
 
-// ================= ERROR HANDLERS =================
+// ================= GLOBAL INTERCEPT ERROR HANDLERS =================
 app.use(notFound);
 app.use(errorHandler);
 
-// ================= SINGLE SERVER START =================
+// ================= SINGLE SERVER RUNTIME START =================
 const startServer = async () => {
   try {
+    // Disable strict query parameters warning logs inside newer Mongoose compilation instances
+    mongoose.set('strictQuery', true);
+    
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB connected ✅");
+    console.log("MongoDB connected securely ✅");
 
     const PORT = process.env.PORT || 5000;
 
     server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 Secure system instance running on port ${PORT}`);
     });
   } catch (err) {
-    console.error("❌ Server failed:", err.message);
-
-    console.log("🔁 Starting SAFE MODE...");
+    console.error("❌ Critical server bootstrap failure:", err.message);
+    console.log("🔁 Initializing secure fallback safe mode protocols...");
 
     server.listen(5001, () => {
-      console.log("⚠️ Safe mode running on port 5001");
+      console.log("⚠️ Safe mode fallback channel functional on port 5001");
     });
   }
 };

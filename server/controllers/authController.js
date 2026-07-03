@@ -3,155 +3,172 @@ import RefreshToken from "../models/RefreshToken.js";
 import Session from "../models/Session.js";
 import BlacklistedToken from "../models/BlacklistedToken.js";
 import Admin from "../models/Admin.js";
+import Client from "../models/Client.js"; // ✅ ADDED: Client database model reference
 import bcrypt from "bcryptjs";
 
-// ================= TOKENS =================
+// ================= UTILITY TOKENS GENERATORS =================
 const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: "15m" }
+    // Short-lived credentials restrict the damage window if an active session token leaks
+    { expiresIn: "15m" } 
   );
 };
 
 const generateRefreshToken = (user) => {
   return jwt.sign(
-    { id: user._id },
+    { id: user._id, role: user.role }, // ✅ FIXED: Encapsulating role safely inside payload
     process.env.REFRESH_SECRET,
     { expiresIn: "7d" }
   );
 };
 
+// Precise cookie options targeting cross-origin security layers on Render
 const cookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite:
-    process.env.NODE_ENV === "production"
-      ? "none"
-      : "lax",
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  httpOnly: true, // Prevents client-side scripts from reading token values (Blocks XSS attacks)
+  secure: process.env.NODE_ENV === "production", 
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 Days lifespan matches token expiration limits
 };
-// ================= LOGIN =================
-export const loginAdmin = async (req, res) => {
+
+// ================= SECURE AUTHENTICATION PIPELINE ENGINE =================
+const handleUserLogin = async (req, res, UserModel, userType) => {
   try {
     const { email, password } = req.body;
 
-    console.log("LOGIN REQUEST:", req.body);
-
-    const admin = await Admin.findOne({ email }).select("+password");
-
-    if (!admin) {
-      return res.status(400).json({ message: "Admin not found" });
+    if (!email || !password) {
+      return res.status(400).json({ message: "All authentication inputs required" });
     }
 
-    if (!admin.password) {
-      return res.status(500).json({ message: "Admin password missing in DB" });
+    // Force pull password parameters explicitly since select property defaults to false in security schemas
+    const user = await UserModel.findOne({ email: email.toLowerCase().trim() }).select("+password");
+
+    // 🛡️ SECURITY FIX: Generic errors completely obscure account validation presence
+    if (!user || !user.password) {
+      return res.status(401).json({ message: "Invalid email or password parameters" });
     }
 
-    const match = await bcrypt.compare(password, admin.password);
-
+    const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return res.status(400).json({ message: "Invalid password" });
+      return res.status(401).json({ message: "Invalid email or password parameters" });
     }
 
-    const accessToken = generateAccessToken(admin);
-    const refreshToken = generateRefreshToken(admin);
+    // Ensure the payload tracking parameter accurately handles different dashboard expectations
+    const userRole = userType === "admin" ? "admin" : "client";
+    user.role = userRole;
 
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    // Save tokens to track single-device permissions
     await RefreshToken.create({
       token: refreshToken,
-      userId: admin._id,
+      userId: user._id,
     });
 
     await Session.create({
-      userId: admin._id,
+      userId: user._id,
       userAgent: req.headers["user-agent"],
       ip: req.ip,
       refreshToken,
     });
 
-    res.cookie(
-  "refreshToken",
-  refreshToken,
-  cookieOptions
-);
+    res.cookie("refreshToken", refreshToken, cookieOptions);
 
+    const userPayloadKey = userType === "admin" ? "admin" : "client";
     return res.json({
       accessToken,
-      admin: {
-        id: admin._id,
-        email: admin.email,
-        role: admin.role,
+      [userPayloadKey]: {
+        id: user._id,
+        email: user.email,
+        role: userRole,
+        ...(userType === "client" && { name: user.name, surname: user.surname })
       },
     });
+
   } catch (err) {
-    console.error("LOGIN ERROR:", err);
-    return res.status(500).json({
-      message: "Server error",
-      error: err.message,
-    });
+    console.error(`${userType.toUpperCase()} LOGIN EXCEPTION HANDLER CRASH:`, err);
+    return res.status(500).json({ message: "Authentication gateway service timeout" });
   }
 };
 
-// ================= REFRESH =================
+// ================= EXPORTED ROUTES CONTROLLERS =================
+
+// ADMIN AUTHENTICATION NODE
+export const loginAdmin = async (req, res) => {
+  await handleUserLogin(req, res, Admin, "admin");
+};
+
+// ✅ CLIENT AUTHENTICATION NODE (INTEGRATED & HARDENED)
+export const loginClient = async (req, res) => {
+  await handleUserLogin(req, res, Client, "client");
+};
+
+// ================= SECURE TIMELINE REFRESH ENGINE =================
 export const refreshToken = async (req, res) => {
   try {
     const token = req.cookies.refreshToken;
 
     if (!token) {
-      return res.status(401).json({ message: "No refresh token" });
+      return res.status(401).json({ message: "Access authorization expired" });
     }
 
+    // Check against active session records in MongoDB
     const stored = await RefreshToken.findOne({ token });
-
     if (!stored) {
-      return res.status(403).json({ message: "Invalid refresh token" });
+      return res.status(403).json({ message: "Session track validation failure" });
     }
 
     const decoded = jwt.verify(token, process.env.REFRESH_SECRET);
 
+    // ✅ SECURITY FIX: Extract the role from the verified payload to block privilege exploits
     const newAccessToken = generateAccessToken({
       _id: decoded.id,
-      role: "admin",
+      role: decoded.role, 
     });
 
     const newRefreshToken = generateRefreshToken({
       _id: decoded.id,
+      role: decoded.role
     });
 
+    // Cycle tokens locally to invalidate reused parameters
     stored.token = newRefreshToken;
     await stored.save();
 
-    res.cookie(
-  "refreshToken",
-  newRefreshToken,
-  cookieOptions
-);
-
+    res.cookie("refreshToken", newRefreshToken, cookieOptions);
     res.json({ accessToken: newAccessToken });
+
   } catch (err) {
-    res.status(401).json({ message: "Refresh failed" });
+    console.error("TOKEN REFRESH CYCLE CANCELED:", err.message);
+    return res.status(401).json({ message: "Session tracking token invalidation check failed" });
   }
 };
 
-// ================= LOGOUT =================
+// ================= SECURE DISPATCH PURGE (LOGOUT) =================
 export const logout = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
+    const refreshToken = req.cookies.refreshToken;
 
+    // Capture and drop existing backend database tracking loops instantly
     if (token) {
       await BlacklistedToken.create({
         token,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // Blacklist lasts access expiration length (15m)
       });
     }
 
-    res.clearCookie(
-  "refreshToken",
-  cookieOptions
-);
+    if (refreshToken) {
+      await RefreshToken.deleteOne({ token: refreshToken });
+      await Session.deleteOne({ refreshToken });
+    }
 
-    res.json({ message: "Logged out" });
+    res.clearCookie("refreshToken", cookieOptions);
+    return res.json({ message: "Profile session parameters cleared safely" });
   } catch (err) {
-    res.status(500).json({ message: "Logout failed" });
+    console.error("LOGOUT FAILURE LOGS:", err);
+    return res.status(500).json({ message: "Session destruction exception intercepted" });
   }
 };

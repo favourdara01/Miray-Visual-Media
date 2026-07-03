@@ -4,7 +4,10 @@ import { useDropzone } from "react-dropzone";
 
 const optimizeImage = (url) => {
   if (!url) return "";
+
+  // already optimized or external URL
   if (!url.includes("cloudinary.com")) return url;
+
   return url.replace(
     "/upload/",
     "/upload/f_auto,q_auto,w_800,c_fill/"
@@ -21,15 +24,20 @@ export default function ManageMedia() {
   const [progress, setProgress] = useState(0);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
 
+  // Native drag-and-drop state tracker
+  const [draggedItemIndex, setDraggedItemIndex] = useState(null);
+
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [storage, setStorage] = useState(null);
 
+  // Pull token from localStorage if not available in current scope
   const token = localStorage.getItem("token") || sessionStorage.getItem("accessToken") || "";
 
   // ================= FETCH MEDIA =================
   const fetchMedia = async () => {
     try {
       const res = await api.get("/media");
+
       const data = res.data;
 
       if (Array.isArray(data)) {
@@ -51,6 +59,7 @@ export default function ManageMedia() {
   const fetchStorage = async () => {
     try {
       const res = await api.get("/media/storage");
+
       setStorage(res.data || {});
     } catch (err) {
       console.error("Storage error:", err);
@@ -67,7 +76,9 @@ export default function ManageMedia() {
   const onDrop = async (acceptedFiles) => {
     try {
       setUploading(true);
+
       const formData = new FormData();
+
       acceptedFiles.forEach((file) =>
         formData.append("files", file)
       );
@@ -79,10 +90,12 @@ export default function ManageMedia() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+
           onUploadProgress: (event) => {
             const percent = Math.round(
               (event.loaded * 100) / event.total
             );
+
             setProgress(percent);
           },
         }
@@ -90,6 +103,7 @@ export default function ManageMedia() {
 
       setUploading(false);
       setProgress(0);
+
       fetchMedia();
       fetchStorage();
     } catch (err) {
@@ -104,24 +118,34 @@ export default function ManageMedia() {
       multiple: true,
     });
 
-  // ================= REARRANGE PORTFOLIO ONLY =================
-  const handleMoveItem = async (index, direction) => {
+  // ================= NATIVE DRAG & DROP REARRANGE (PORTFOLIO ONLY) =================
+  const handleDragStart = (index) => {
+    setDraggedItemIndex(index);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault(); // Required to allow dropping elements natively
+  };
+
+  const handleDrop = async (targetIndex) => {
+    if (draggedItemIndex === null || draggedItemIndex === targetIndex) return;
+
     const portfolioItems = media.filter((m) => m?.isPortfolio);
     const nonPortfolioItems = media.filter((m) => !m?.isPortfolio);
 
-    const targetIndex = direction === "left" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= portfolioItems.length) return;
-
     const rearrangedPortfolio = [...portfolioItems];
-    const temporarySwapHolder = rearrangedPortfolio[index];
-    rearrangedPortfolio[index] = rearrangedPortfolio[targetIndex];
-    rearrangedPortfolio[targetIndex] = temporarySwapHolder;
+    // Remove the item being dragged from its original position
+    const [draggedItem] = rearrangedPortfolio.splice(draggedItemIndex, 1);
+    // Insert the dragged item cleanly into its new dropped index target
+    rearrangedPortfolio.splice(targetIndex, 0, draggedItem);
 
-    // Instantly show the change to the admin
+    // Update the local state instantly for a lightning-fast responsive feel
     setMedia([...rearrangedPortfolio, ...nonPortfolioItems]);
+    setDraggedItemIndex(null);
 
     try {
       setIsSavingOrder(true);
+      // Map out structured order coordinate objects array [{ id: X, position: Y }]
       const orderArray = rearrangedPortfolio.map((item, idx) => ({
         id: item._id,
         position: idx,
@@ -131,8 +155,8 @@ export default function ManageMedia() {
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch (err) {
-      console.error("Rearrange save error:", err);
-      fetchMedia(); // Rollback if backend fails
+      console.error("Failed to commit dropped portfolio layout:", err);
+      fetchMedia(); // Rollback grid position matrix on synchronization faults
     } finally {
       setIsSavingOrder(false);
     }
@@ -153,6 +177,7 @@ export default function ManageMedia() {
       );
 
       setDeleteTarget(null);
+
       fetchMedia();
       fetchStorage();
     } catch (err) {
@@ -176,6 +201,7 @@ export default function ManageMedia() {
       );
 
       setSelected([]);
+
       fetchMedia();
       fetchStorage();
     } catch (err) {
@@ -191,25 +217,45 @@ export default function ManageMedia() {
     );
   };
 
-  const safeMedia = Array.isArray(media) ? media : [];
+  // ================= SAFE MEDIA =================
+  const safeMedia = Array.isArray(media)
+    ? media
+    : [];
 
   const filteredMedia = safeMedia.filter((m) => {
-    const matchesType = filter === "all" ? true : m?.type === filter;
-    const matchesSearch = (m?.caption || "").toLowerCase().includes(search.toLowerCase());
+    const matchesType =
+      filter === "all"
+        ? true
+        : m?.type === filter;
+
+    const matchesSearch =
+      (m?.caption || "")
+        .toLowerCase()
+        .includes(search.toLowerCase());
+
     return matchesType && matchesSearch;
   });
 
   const grouped = {
-    portfolio: filteredMedia.filter((m) => m?.isPortfolio),
-    clients: filteredMedia.filter((m) => m?.client),
-    others: filteredMedia.filter((m) => !m?.isPortfolio && !m?.client),
+    portfolio: filteredMedia.filter(
+      (m) => m?.isPortfolio
+    ),
+
+    clients: filteredMedia.filter(
+      (m) => m?.client
+    ),
+
+    others: filteredMedia.filter(
+      (m) => !m?.isPortfolio && !m?.client
+    ),
   };
 
-  const toMB = (bytes) => (bytes / (1024 * 1024)).toFixed(2);
+  const toMB = (bytes) =>
+    (bytes / (1024 * 1024)).toFixed(2);
 
   const renderGroup = (title, items) => {
     const isPortfolioGroup = title === "Portfolio";
-    
+
     return (
       <>
         {items.length > 0 && (
@@ -220,7 +266,7 @@ export default function ManageMedia() {
               </h3>
               {isPortfolioGroup && isSavingOrder && (
                 <span className="text-xs font-medium text-orange-500 animate-pulse">
-                  Saving order...
+                  Saving arrangement order...
                 </span>
               )}
             </div>
@@ -229,13 +275,24 @@ export default function ManageMedia() {
               {items.map((m, idx) => (
                 <div
                   key={m._id}
-                  className="relative overflow-hidden bg-white shadow rounded-2xl group"
+                  className={`relative bg-white shadow rounded-2xl ${
+                    isPortfolioGroup ? "cursor-grab active:cursor-grabbing transition-transform duration-200" : ""
+                  }`}
+                  // 🔥 Native HTML5 Drag and Drop triggers (Applied dynamically *only* to Portfolio items)
+                  draggable={isPortfolioGroup}
+                  onDragStart={isPortfolioGroup ? () => handleDragStart(idx) : undefined}
+                  onDragOver={isPortfolioGroup ? handleDragOver : undefined}
+                  onDrop={isPortfolioGroup ? () => handleDrop(idx) : undefined}
                 >
                   <input
                     type="checkbox"
                     className="absolute z-10 top-3 left-3"
-                    checked={selected.includes(m._id)}
-                    onChange={() => toggleSelect(m._id)}
+                    checked={selected.includes(
+                      m._id
+                    )}
+                    onChange={() =>
+                      toggleSelect(m._id)
+                    }
                   />
 
                   <div
@@ -244,50 +301,28 @@ export default function ManageMedia() {
                   >
                     {m?.type === "image" ? (
                       <img
-                        src={optimizeImage(m?.url)}
+                        src={optimizeImage(
+                          m?.url
+                        )}
                         loading="lazy"
-                        className="object-cover w-full h-48 rounded-t-2xl"
+                        className="object-cover w-full h-48 pointer-events-none rounded-t-2xl" // pointer-events-none ensures clean card dragging
                       />
                     ) : (
                       <video
                         src={m?.url}
-                        className="object-cover w-full h-48 rounded-t-2xl"
+                        className="object-cover w-full h-48 pointer-events-none rounded-t-2xl"
                       />
                     )}
                   </div>
 
-                  {/* 🔥 ONLY DISPLAY SHIFT CONTROLS INSIDE THE EXPLICIT PORTFOLIO LISTING ACCORDING TO PLAN */}
-                  {isPortfolioGroup && (
-                    <div className="absolute inset-x-0 flex justify-between px-2 transition-opacity opacity-0 pointer-events-none bottom-12 group-hover:opacity-100">
-                      <button
-                        type="button"
-                        disabled={idx === 0 || isSavingOrder}
-                        onClick={(e) => { e.stopPropagation(); handleMoveItem(idx, "left"); }}
-                        className={`pointer-events-auto px-2 py-1 text-xs text-white rounded font-bold transition ${
-                          idx === 0 ? "bg-gray-300 cursor-not-allowed" : "bg-[#015103] hover:bg-green-800"
-                        }`}
-                      >
-                        ← Move Left
-                      </button>
-                      <button
-                        type="button"
-                        disabled={idx === items.length - 1 || isSavingOrder}
-                        onClick={(e) => { e.stopPropagation(); handleMoveItem(idx, "right"); }}
-                        className={`pointer-events-auto px-2 py-1 text-xs text-white rounded font-bold transition ${
-                          idx === items.length - 1 ? "bg-gray-300 cursor-not-allowed" : "bg-[#015103] hover:bg-green-800"
-                        }`}
-                      >
-                        Right →
-                      </button>
-                    </div>
-                  )}
-
-                  <p className="p-2 text-sm truncate">
+                  <p className="p-2 text-sm truncate select-none">
                     {m?.caption || "Untitled"}
                   </p>
 
                   <button
-                    onClick={() => setDeleteTarget(m._id)}
+                    onClick={() =>
+                      setDeleteTarget(m._id)
+                    }
                     className="absolute z-10 px-2 py-1 text-xs text-white bg-red-500 rounded top-2 right-2"
                   >
                     Delete
@@ -310,26 +345,38 @@ export default function ManageMedia() {
       {storage && (
         <p className="text-sm text-gray-500">
           Storage:{" "}
-          {toMB(storage?.storage?.used || 0)}MB
+          {toMB(
+            storage?.storage?.used || 0
+          )}MB
           /
-          {toMB(storage?.storage?.limit || 0)}MB
+          {toMB(
+            storage?.storage?.limit || 0
+          )}MB
         </p>
       )}
 
       <div className="flex gap-3 my-4">
         <input
           placeholder="Search..."
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) =>
+            setSearch(e.target.value)
+          }
           className="p-2 border rounded"
         />
 
         <select
-          onChange={(e) => setFilter(e.target.value)}
+          onChange={(e) =>
+            setFilter(e.target.value)
+          }
           className="p-2 border rounded"
         >
           <option value="all">All</option>
-          <option value="image">Images</option>
-          <option value="video">Videos</option>
+          <option value="image">
+            Images
+          </option>
+          <option value="video">
+            Videos
+          </option>
         </select>
 
         {selected.length > 0 && (
@@ -347,17 +394,30 @@ export default function ManageMedia() {
         className="p-6 text-center transition border-2 border-gray-300 border-dashed cursor-pointer rounded-2xl bg-gray-50 hover:bg-gray-100"
       >
         <input {...getInputProps()} />
+
         <p className="text-gray-600">
           Drag & drop or click to upload
         </p>
+
         {uploading && (
           <p className="mt-2 font-semibold text-blue-500">{progress}% uploading...</p>
         )}
       </div>
 
-      {renderGroup("Portfolio", grouped.portfolio)}
-      {renderGroup("Client Media", grouped.clients)}
-      {renderGroup("Others", grouped.others)}
+      {renderGroup(
+        "Portfolio",
+        grouped.portfolio
+      )}
+
+      {renderGroup(
+        "Client Media",
+        grouped.clients
+      )}
+
+      {renderGroup(
+        "Others",
+        grouped.others
+      )}
 
       {preview && (
         <div

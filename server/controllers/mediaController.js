@@ -4,9 +4,9 @@ import cloudinary from "../config/cloudinary.js";
 import Client from "../models/Client.js";
 import ViewLog from "../models/ViewLog.js";
 
-// ==========================
+// ========================================================
 // 🔥 SAFE SINGLE + MULTI UPLOAD
-// ==========================
+// ========================================================
 export const uploadMedia = async (req, res) => {
   try {
     const files = req.files;
@@ -24,12 +24,10 @@ export const uploadMedia = async (req, res) => {
       return res.status(400).json({ message: "No files uploaded" });
     }
 
-    // 🔐 AUTH REQUIRED
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // 🔐 BASIC VALIDATION
     const allowedTypes = [
       "image/jpeg",
       "image/png",
@@ -86,9 +84,7 @@ export const uploadMedia = async (req, res) => {
       const media = await Media.create({
         url: result.secure_url,
         public_id: result.public_id,
-        type: file.mimetype.startsWith("video")
-          ? "video"
-          : "image",
+        type: file.mimetype.startsWith("video") ? "video" : "image",
 
         client: isPortfolio === "true" ? null : clientId,
         gallery: isPortfolio === "true" ? null : galleryId,
@@ -104,14 +100,12 @@ export const uploadMedia = async (req, res) => {
       uploadedMedia.push(media);
     }
 
-    // update storage safely
     if (clientId) {
       await Client.findByIdAndUpdate(clientId, {
         $inc: { storageUsed: Number(totalSizeMB.toFixed(2)) },
       });
     }
 
-    // socket safely
     if (req.io && clientId) {
       req.io.to(clientId).emit("new-media", {
         message: "New photos uploaded",
@@ -130,14 +124,13 @@ export const uploadMedia = async (req, res) => {
   }
 };
 
-// ==========================
+// ========================================================
 // BULK UPLOAD (SAFE)
-// ==========================
+// ========================================================
 export const uploadBulkMedia = async (req, res) => {
   try {
     const files = req.files;
-    const { clientId, galleryId, section, subCategory } =
-      req.body;
+    const { clientId, galleryId, section, subCategory } = req.body;
 
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -160,9 +153,7 @@ export const uploadBulkMedia = async (req, res) => {
       const result = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           {
-            resource_type: file.mimetype.startsWith("video")
-              ? "video"
-              : "image",
+            resource_type: file.mimetype.startsWith("video") ? "video" : "image",
             folder: `clients/${clientId}/gallery/${galleryId}`,
           },
           (err, result) => {
@@ -179,9 +170,7 @@ export const uploadBulkMedia = async (req, res) => {
       const media = await Media.create({
         url: result.secure_url,
         public_id: result.public_id,
-        type: file.mimetype.startsWith("video")
-          ? "video"
-          : "image",
+        type: file.mimetype.startsWith("video") ? "video" : "image",
         client: clientId,
         gallery: galleryId,
         section: section || "Events",
@@ -206,9 +195,9 @@ export const uploadBulkMedia = async (req, res) => {
   }
 };
 
-// ==========================
+// ========================================================
 // SAFE DELETE MEDIA
-// ==========================
+// ========================================================
 export const deleteMedia = async (req, res) => {
   try {
     const media = await Media.findById(req.params.id);
@@ -217,7 +206,6 @@ export const deleteMedia = async (req, res) => {
       return res.status(404).json({ message: "Media not found" });
     }
 
-    // 🔐 ownership check
     if (
       media.uploadedBy &&
       media.uploadedBy.toString() !== req.user.id &&
@@ -233,16 +221,15 @@ export const deleteMedia = async (req, res) => {
     }
 
     await Media.findByIdAndDelete(req.params.id);
-
     res.json({ message: "Deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// ==========================
+// ========================================================
 // SAFE VIEW TRACKING
-// ==========================
+// ========================================================
 export const trackView = async (req, res) => {
   try {
     const { mediaId } = req.body;
@@ -251,9 +238,7 @@ export const trackView = async (req, res) => {
       return res.status(400).json({ message: "mediaId required" });
     }
 
-    const ip =
-      req.headers["x-forwarded-for"] ||
-      req.socket.remoteAddress;
+    const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
 
     const exists = await ViewLog.findOne({
       media: mediaId,
@@ -279,9 +264,9 @@ export const trackView = async (req, res) => {
   }
 };
 
-// ==========================
+// ========================================================
 // SAFE DOWNLOAD TRACKING
-// ==========================
+// ========================================================
 export const trackDownload = async (req, res) => {
   try {
     const { mediaId } = req.body;
@@ -300,14 +285,15 @@ export const trackDownload = async (req, res) => {
   }
 };
 
+// ========================================================
+// GET ALL MEDIA
+// ========================================================
 export const getAllMedia = async (req, res) => {
   try {
-    // optional: protect route
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // optional: pagination (VERY important for SaaS scaling)
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
@@ -316,7 +302,7 @@ export const getAllMedia = async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select("-__v"); // hide mongoose metadata
+      .select("-__v");
 
     const total = await Media.countDocuments();
 
@@ -334,6 +320,9 @@ export const getAllMedia = async (req, res) => {
   }
 };
 
+// ========================================================
+// GET ANALYTICS
+// ========================================================
 export const getAnalytics = async (req, res) => {
   try {
     const totalMedia = await Media.countDocuments();
@@ -357,15 +346,16 @@ export const getAnalytics = async (req, res) => {
   }
 };
 
+// ========================================================
+// GET CLIENT MEDIA
+// ========================================================
 export const getClientMedia = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const media = await Media.find({ client: req.user.id })
-      .sort({ createdAt: -1 });
-
+    const media = await Media.find({ client: req.user.id }).sort({ createdAt: -1 });
     res.json(media);
   } catch (err) {
     console.error("GET CLIENT MEDIA ERROR:", err);
@@ -373,16 +363,15 @@ export const getClientMedia = async (req, res) => {
   }
 };
 
+// ========================================================
+// GET MEDIA BY CLIENT
+// ========================================================
 export const getMediaByClient = async (req, res) => {
-
-    if (
-  req.user.role !== "admin" &&
-  req.user.id !== req.params.clientId
-) {
-  return res.status(403).json({
-    message: "Access denied",
-  });
-}
+  if (req.user.role !== "admin" && req.user.id !== req.params.clientId) {
+    return res.status(403).json({
+      message: "Access denied",
+    });
+  }
 
   try {
     const { clientId } = req.params;
@@ -391,9 +380,7 @@ export const getMediaByClient = async (req, res) => {
       return res.status(400).json({ message: "clientId required" });
     }
 
-    const media = await Media.find({ client: clientId })
-      .sort({ createdAt: -1 });
-
+    const media = await Media.find({ client: clientId }).sort({ createdAt: -1 });
     res.json(media);
   } catch (err) {
     console.error("GET MEDIA BY CLIENT ERROR:", err);
@@ -401,6 +388,9 @@ export const getMediaByClient = async (req, res) => {
   }
 };
 
+// ========================================================
+// GET MEDIA BY GALLERY
+// ========================================================
 export const getMediaByGallery = async (req, res) => {
   try {
     const { id } = req.params;
@@ -409,9 +399,7 @@ export const getMediaByGallery = async (req, res) => {
       return res.status(400).json({ message: "gallery id required" });
     }
 
-    const media = await Media.find({ gallery: id })
-      .sort({ createdAt: -1 });
-
+    const media = await Media.find({ gallery: id }).sort({ createdAt: -1 });
     res.json(media);
   } catch (err) {
     console.error("GET MEDIA BY GALLERY ERROR:", err);
@@ -419,14 +407,15 @@ export const getMediaByGallery = async (req, res) => {
   }
 };
 
+// ========================================================
+// GET CLOUDINARY STORAGE USAGE INFO
+// ========================================================
 export const getStorage = async (req, res) => {
   try {
-    // optional security check
     if (!req.user || req.user.role !== "admin") {
       return res.status(403).json({ message: "Forbidden" });
     }
 
-    // Cloudinary usage API
     const result = await cloudinary.api.usage();
 
     res.json({
@@ -449,16 +438,51 @@ export const getStorage = async (req, res) => {
   }
 };
 
+// ========================================================
+// GET PORTFOLIO MEDIA (SORT MODIFIED)
+// ========================================================
 export const getPortfolioMedia = async (req, res) => {
   try {
-    const media = await Media.find({
-      isPortfolio: true,
-    }).sort({ createdAt: -1 });
-
+    // ✅ FIXED: Prioritize custom sortOrder positions first, falling back onto chronological additions
+    const media = await Media.find({ isPortfolio: true }).sort({ sortOrder: 1, createdAt: -1 });
     res.json(media);
   } catch (error) {
     res.status(500).json({
       message: error.message,
     });
+  }
+};
+
+// ========================================================
+// 🔥 REARRANGE PORTFOLIO PICTURE POSITIONS (BULK WRITE)
+// ========================================================
+export const rearrangePortfolio = async (req, res) => {
+  try {
+    const { orderArray } = req.body;
+
+    if (!orderArray || !Array.isArray(orderArray)) {
+      return res.status(400).json({ success: false, message: "Missing layout configuration arrays." });
+    }
+
+    const bulkOperations = orderArray.map((item) => ({
+      updateOne: {
+        filter: { _id: item.id },
+        update: { $set: { sortOrder: item.position } },
+      },
+    }));
+
+    await Media.bulkWrite(bulkOperations);
+
+    if (req.io) {
+      req.io.emit("portfolio-rearranged");
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Portfolio layout coordinated successfully",
+    });
+  } catch (error) {
+    console.error("PORTFOLIO REARRANGE ERROR:", error);
+    return res.status(500).json({ success: false, message: "Internal arrangement failure" });
   }
 };

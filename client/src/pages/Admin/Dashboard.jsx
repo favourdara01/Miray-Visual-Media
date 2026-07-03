@@ -23,7 +23,6 @@ export default function AdminDashboard() {
       const res = await api.get("/analytics", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setAnalytics(res.data);
     } catch (err) {
       console.log("Analytics error:", err.message);
@@ -36,7 +35,6 @@ export default function AdminDashboard() {
       const res = await api.get("/bookings", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setBookings(res.data);
     } catch (err) {
       console.log("Bookings error:", err.message);
@@ -52,7 +50,6 @@ export default function AdminDashboard() {
     fetchAnalytics();
     fetchBookings();
 
-    // ✅ FIX: Fixed the connection fallback order for Render's HTTP proxy layer
     const socket = io(
       "https://miray-visual-media-1.onrender.com",
       {
@@ -71,8 +68,19 @@ export default function AdminDashboard() {
     });
 
     socket.on("new-booking", (data) => {
-      setNotifications((prev) => [data, ...prev]);
+      setNotifications((prev) => [
+        { type: "booking", name: data.name, ...data },
+        ...prev,
+      ]);
       fetchBookings();
+    });
+
+    // ✅ NEW: Listen for real-time contact form inquiries
+    socket.on("new-contact-message", (data) => {
+      setNotifications((prev) => [
+        { type: "contact", name: data.name, message: data.message, ...data },
+        ...prev,
+      ]);
     });
 
     return () => socket.disconnect();
@@ -145,17 +153,44 @@ export default function AdminDashboard() {
         {/* NOTIFICATIONS CONTAINER */}
         <Section title="Live Socket Feed Monitoring">
           <div className="space-y-3 mt-4 max-h-[380px] overflow-y-auto pr-1">
-            {notifications.map((n, i) => (
-              <div 
-                key={i} 
-                className="flex items-center gap-3 p-4 border shadow-xs border-orange-100/70 bg-orange-50/40 backdrop-blur-md rounded-2xl animate-fadeIn"
-              >
-                <div className="h-2 w-2 rounded-full bg-[#FE8521] animate-ping" />
-                <p className="text-sm font-medium leading-relaxed text-gray-700">
-                  New incoming booking received from <span className="font-bold text-gray-900">{n.name}</span>
-                </p>
-              </div>
-            ))}
+            {notifications.map((n, i) => {
+              const isContact = n.type === "contact";
+              
+              return (
+                <div 
+                  key={i} 
+                  className={`flex flex-col gap-1.5 p-4 border backdrop-blur-md rounded-2xl animate-fadeIn ${
+                    isContact 
+                      ? "border-green-100 bg-green-50/30 shadow-2xs" 
+                      : "border-orange-100/70 bg-orange-50/40"
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2 w-2 rounded-full ${isContact ? "bg-[#015103]" : "bg-[#FE8521]"} animate-ping`} />
+                      <p className="text-sm font-medium leading-relaxed text-gray-700">
+                        {isContact ? "Inquiry message received from " : "New incoming booking received from "}
+                        <span className="font-bold text-gray-900">{n.name}</span>
+                      </p>
+                    </div>
+                    
+                    {/* Visual context type indicator badge */}
+                    <span className={`text-[9px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded-md border ${
+                      isContact ? "bg-green-100 text-[#015103] border-green-200" : "bg-orange-100 text-[#FE8521] border-orange-200"
+                    }`}>
+                      {isContact ? "Contact" : "Booking"}
+                    </span>
+                  </div>
+
+                  {/* Render message preview clip for contact inquiries */}
+                  {isContact && n.message && (
+                    <p className="text-xs text-gray-500 italic bg-white/70 p-2.5 rounded-xl border border-gray-100 font-medium break-words max-h-16 overflow-hidden text-ellipsis">
+                      "{n.message}"
+                    </p>
+                  )}
+                </div>
+              );
+            })}
 
             {notifications.length === 0 && (
               <div className="py-12 text-center border border-gray-200 border-dashed rounded-2xl">
@@ -167,7 +202,6 @@ export default function AdminDashboard() {
           </div>
         </Section>
       </div>
-
     </div>
   );
 }

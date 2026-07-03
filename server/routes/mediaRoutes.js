@@ -11,6 +11,7 @@ import {
   getMediaByClient,
   getMediaByGallery,
   getPortfolioMedia,
+  rearrangePortfolio
   getStorage,
   getAnalytics
 } from "../controllers/mediaController.js";
@@ -52,6 +53,8 @@ router.post(
 
 
 router.get("/portfolio", getPortfolioMedia);
+
+router.put("/rearrange", protect, adminOnly, rearrangePortfolio);
 
 // ================= FETCH MEDIA =================
 

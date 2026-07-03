@@ -10,9 +10,6 @@ import rateLimit from "express-rate-limit";
 import hpp from "hpp";
 import cookieParser from "cookie-parser";
 
-// Prevent NoSQL Query Injection payloads securely
-import mongoSanitize from "express-mongo-sanitize";
-
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 // Routes
@@ -50,12 +47,11 @@ const server = http.createServer(app);
 
 // ================= SECURITY DEFENSES =================
 
-// 🛡️ TUNED: Helmet configuration explicitly permissive to cross-origin resource requests
 app.use(
   helmet({
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: false, // Bypass strict CSP headers to keep cross-origin cookies stable
+    contentSecurityPolicy: false,
   })
 );
 
@@ -74,7 +70,7 @@ const corsOptions = {
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    return callback(null, true); // Allow visual testing tools fallback
+    return callback(null, true);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -88,15 +84,25 @@ app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cookieParser());
 
-// 🛡️ FIX: Configure MongoSanitize explicitly so it doesn't wash authentic text strings out of body requests
-app.use(
-  mongoSanitize({
-    replaceWith: "_",
-    allowDots: true,
-    dryRun: false,
-    includeQueryParams: false, // 🔥 THIS IS THE CRITICAL LINE! It stops the crash instantly.
-  })
-);
+// 🛡️ NATIVE ULTRA-SAFE NOSQL INJECTION SANITIZER
+// Recursively strips any keys starting with "$" or containing dots from body & params, avoiding read-only query bugs entirely.
+const deepSanitize = (obj) => {
+  if (obj && typeof obj === "object") {
+    for (const key in obj) {
+      if (key.startsWith("$") || key.includes(".")) {
+        delete obj[key];
+      } else if (typeof obj[key] === "object") {
+        deepSanitize(obj[key]);
+      }
+    }
+  }
+};
+
+app.use((req, res, next) => {
+  if (req.body) deepSanitize(req.body);
+  if (req.params) deepSanitize(req.params);
+  next();
+});
 
 // PREVENT HTTP PARAMETER POLLUTION
 app.use(hpp());
@@ -105,7 +111,7 @@ app.use(hpp());
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200, // Elevated baseline to prevent false-positives
+    max: 200, 
     standardHeaders: true, 
     legacyHeaders: false,  
     message: "Too many requests matching this IP sequence.",
@@ -132,7 +138,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// Attach socket context securely to middleware loop pipes
 app.use((req, res, next) => {
   req.io = io;
   next();
@@ -169,7 +174,6 @@ app.get("/", (req, res) => {
 startWeeklyReportJob();
 startMonthlyReportJob();
 
-// ================= GLOBAL INTERCEPT ERROR HANDLERS =================
 app.use(notFound);
 app.use(errorHandler);
 

@@ -8,11 +8,10 @@ export default function AdminMessages() {
   const [activeTab, setActiveTab] = useState("contacts"); 
   const [loading, setLoading] = useState(true);
 
-  // ================= 1. FETCH PREVIOUS LOG HISTORY =================
+  // ================= 1. FETCH LOG HISTORY =================
   const fetchHistoryLogs = async () => {
     try {
       setLoading(true);
-      // Fetch existing entries from your database endpoints
       const [contactRes, subRes] = await Promise.all([
         api.get("/contact"),
         api.get("/newsletter")
@@ -27,37 +26,29 @@ export default function AdminMessages() {
     }
   };
 
-  // ================= 2. LIVE SOCKET.IO SYSTEM REAL-TIME CONNECTION =================
+  // ================= 2. LIVE REAL-TIME SOCKET LISTENER =================
   useEffect(() => {
-    // Run history fetch first
     fetchHistoryLogs();
 
-    // Pull your backend URL out of axios config defaults or fallback to your server URL
     const socketUrl = api.defaults.baseURL?.replace("/api", "") || "https://miray-visual-media-1.onrender.com";
     
-    // Establish connection to socket network
     const socket = io(socketUrl, {
-      transports: ["websocket"],
-      auth: {
-        token: localStorage.getItem("token") // Pass auth token if required by server guards
-      }
+      transports: ["websocket"]
     });
 
     socket.on("connect", () => {
-      console.log("⚡ Connected to Miray live stream mesh");
+      console.log("⚡ Connected to live message stream");
     });
 
-    // Listen for live new contact actions
-    socket.on("newContact", (newContactData) => {
+    // ✅ FIXED STRINGS: Matches your backend emission event name perfectly now!
+    socket.on("new-contact-message", (newContactData) => {
       setContacts((prev) => [newContactData, ...prev]);
     });
 
-    // Listen for live new newsletter subscriber arrivals
     socket.on("newSubscriber", (newSubData) => {
       setSubscribers((prev) => [newSubData, ...prev]);
     });
 
-    // Cleanup workspace connection on component layout dismantle
     return () => {
       socket.disconnect();
     };
@@ -75,7 +66,7 @@ export default function AdminMessages() {
         </div>
         <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-xl text-[9px] font-bold text-emerald-600 uppercase">
           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-          Socket Sync Active
+          Live Feed Open
         </div>
       </div>
 
@@ -84,9 +75,7 @@ export default function AdminMessages() {
         <button
           onClick={() => setActiveTab("contacts")}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider transition-all relative ${
-            activeTab === "contacts"
-              ? "text-[#FE8521] font-black"
-              : "text-gray-400 hover:text-gray-700"
+            activeTab === "contacts" ? "text-[#FE8521] font-black" : "text-gray-400"
           }`}
         >
           Inquiries ({contacts.length})
@@ -95,9 +84,7 @@ export default function AdminMessages() {
         <button
           onClick={() => setActiveTab("newsletter")}
           className={`px-5 py-3 text-xs font-bold uppercase tracking-wider transition-all relative ${
-            activeTab === "newsletter"
-              ? "text-[#FE8521] font-black"
-              : "text-gray-400 hover:text-gray-700"
+            activeTab === "newsletter" ? "text-[#FE8521] font-black" : "text-gray-400"
           }`}
         >
           Subscribers ({subscribers.length})
@@ -112,23 +99,19 @@ export default function AdminMessages() {
           <p className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Syncing Server History Arrays...</p>
         </div>
       ) : activeTab === "contacts" ? (
-        
         contacts.length === 0 ? (
           <p className="py-16 text-sm font-medium text-center text-gray-400">No contact messages received yet.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {contacts.map((msg) => (
-              <div key={msg._id || msg.id} className="p-5 space-y-3 transition duration-300 bg-white border shadow-xs border-black/5 rounded-2xl hover:shadow-md animate-in slide-in-from-top-2">
+              <div key={msg._id || msg.id} className="p-5 space-y-3 transition duration-300 bg-white border shadow-sm border-black/5 rounded-2xl hover:shadow-md">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h4 className="text-sm font-bold text-gray-800">{msg.name}</h4>
                     <p className="text-[11px] font-semibold text-[#FE8521] break-all">{msg.email}</p>
                   </div>
                   <span className="text-[9px] font-black tracking-wider text-gray-400 bg-gray-50/80 px-2.5 py-1 rounded-lg border border-gray-100 whitespace-nowrap uppercase">
-                    {new Date(msg.createdAt || msg.date || Date.now()).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric"
-                    })}
+                    {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "New"}
                   </span>
                 </div>
                 <div className="w-full h-px bg-gray-100/60" />
@@ -140,11 +123,10 @@ export default function AdminMessages() {
           </div>
         )
       ) : (
-        
         subscribers.length === 0 ? (
           <p className="py-16 text-sm font-medium text-center text-gray-400">No newsletter subscriptions logged.</p>
         ) : (
-          <div className="overflow-hidden duration-300 bg-white border shadow-xs border-black/5 rounded-2xl animate-in fade-in">
+          <div className="overflow-hidden bg-white border shadow-xs border-black/5 rounded-2xl">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-gray-50/70 border-b border-gray-100 text-[10px] font-black uppercase tracking-wider text-gray-400">
@@ -154,14 +136,10 @@ export default function AdminMessages() {
               </thead>
               <tbody className="text-xs font-semibold text-gray-600 divide-y divide-gray-100/60">
                 {subscribers.map((sub) => (
-                  <tr key={sub._id || sub.id} className="transition duration-150 hover:bg-gray-50/30">
+                  <tr key={sub._id || sub.id} className="transition hover:bg-gray-50/30">
                     <td className="p-4 pl-6 font-bold text-gray-800">{sub.email}</td>
                     <td className="p-4 pr-6 font-medium text-right text-gray-400">
-                      {new Date(sub.createdAt || sub.date || Date.now()).toLocaleString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric"
-                      })}
+                      {new Date(sub.createdAt || Date.now()).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                     </td>
                   </tr>
                 ))}

@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// Dummy content arrays - replace values with your real api or cloud urls later
+// 🎥 LOCAL ASSET IMPORTS
+import artOfLightVideo from "../../assets/reel1.mp4";
+import foreverMomentsVideo from "../../assets/videos/forever-moments.mp4";
+
 const CINEMATIC_VIDEOS = [
   {
     id: "v1",
-    url: "https://assets.mixkit.co/videos/preview/mixkit-photographer-setting-up-his-camera-on-a-tripod-34283-large.mp4",
-    title: "The Art of Light",
+    url: artOfLightVideo,
+    title: "Cinematic Event",
     tag: "Cinematic Reel"
   },
   {
     id: "v2",
-    url: "https://assets.mixkit.co/videos/preview/mixkit-gorgeous-bride-in-her-wedding-dress-41610-large.mp4",
+    url: foreverMomentsVideo,
     title: "Forever Moments",
     tag: "Wedding Highlights"
   }
@@ -23,32 +26,25 @@ const TESTIMONIALS = [
     name: "Amina Bello",
     role: "Bride",
     text: "Miray Visual didn't just take pictures; they captured the exact feeling of our wedding day. Every time I open our gallery, I'm brought to tears. Truly exceptional work!",
-    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150"
   },
   {
     id: "t2",
     name: "Tunde Bakare",
     role: "Corporate Client",
     text: "The speed of the automated studio delivery system combined with the immaculate quality of the headshots makes them our permanent production partner in Lagos.",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150"
   },
   {
     id: "t3",
     name: "Chidi Okafor",
     role: "Studio Session Client",
     text: "Professional, premium, and seamless. The web client dashboard made selecting and downloading our family portraits incredibly effortless.",
-    avatar: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150"
   }
 ];
 
 export default function VideoAndTestimonialSuite() {
-  // Video Section State
   const [activeVideo, setActiveVideo] = useState(CINEMATIC_VIDEOS[0]);
-
-  // Testimonial Carousel State
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // Auto-play interval for Testimonials Carousel
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % TESTIMONIALS.length);
@@ -83,8 +79,9 @@ export default function VideoAndTestimonialSuite() {
               src={activeVideo.url}
               autoPlay
               muted
-              loop
+              loop // 🔥 Forces the loop configuration natively
               playsInline
+              preload="auto" // 🚀 Caches video segments in background memory layers to prevent local lag stalls
               className="object-cover w-full h-full"
             />
             <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/60 via-transparent to-black/20" />
@@ -138,7 +135,7 @@ export default function VideoAndTestimonialSuite() {
             Trusted by Beautiful Souls
           </h2>
 
-          <div className="relative min-h-[220px] md:min-h-[180px] flex items-center justify-center">
+          <div className="relative min-h-[180px] md:min-h-[140px] flex items-center justify-center">
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentIndex}
@@ -153,22 +150,20 @@ export default function VideoAndTestimonialSuite() {
                   {TESTIMONIALS[currentIndex].text}
                 </p>
                 
-                <div className="flex items-center justify-center gap-3 mt-6">
-                  <img
-                    src={TESTIMONIALS[currentIndex].avatar}
-                    alt={TESTIMONIALS[currentIndex].name}
-                    className="object-cover w-10 h-10 border border-orange-100 rounded-full shadow-xs"
-                  />
-                  <div className="text-left">
-                    <p className="text-sm font-bold tracking-tight text-gray-900">{TESTIMONIALS[currentIndex].name}</p>
-                    <p className="text-[11px] text-gray-400 font-medium">{TESTIMONIALS[currentIndex].role}</p>
-                  </div>
+                {/* ✅ Avatar img element has been removed cleanly, centering text alignments perfectly */}
+                <div className="mt-5 text-center">
+                  <p className="text-sm font-bold tracking-tight text-gray-900">
+                    {TESTIMONIALS[currentIndex].name}
+                  </p>
+                  <p className="text-[11px] text-gray-400 font-medium">
+                    {TESTIMONIALS[currentIndex].role}
+                  </p>
                 </div>
               </motion.div>
             </AnimatePresence>
           </div>
 
-          {/* Interactive Carousel Pagination Dots Indicator */}
+          {/* Interactive Carousel Pagination Dots */}
           <div className="flex items-center justify-center gap-2 mt-8">
             {TESTIMONIALS.map((_, i) => (
               <button

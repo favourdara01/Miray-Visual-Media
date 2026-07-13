@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import hero1 from "/src/assets/hero1.jpg";
 import hero2 from "/src/assets/hero2.jpg";
 
-
 const Hero = () => {
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({
@@ -14,100 +13,125 @@ const Hero = () => {
   return (
     <section
       id="home"
-      className="flex items-center min-h-screen px-6 overflow-hidden md:px-10 pt-28"
+      className="relative flex items-center min-h-screen px-6 pt-32 pb-16 overflow-hidden md:px-10"
       style={{
         background:
-          "linear-gradient(135deg, #041d05 0%, #0b260c 55%, #1a2e1a 100%)",
+          "linear-gradient(135deg, #021203 0%, #061c07 45%, #0d220e 100%)",
       }}
     >
-      <div className="grid items-center w-full mx-auto gap-14 max-w-7xl md:grid-cols-2">
+      {/* LUXURY CINEMATIC AMBIENT LIGHT FLOOD */}
+      <div className="absolute inset-0 pointer-events-none -z-10">
+        <div className="absolute top-[-10%] right-[-10%] w-[450px] h-[450px] bg-[#FE8521]/10 blur-[150px] rounded-full" />
+        <div className="absolute bottom-[5%] left-[-5%] w-[400px] h-[400px] bg-emerald-500/5 blur-[130px] rounded-full" />
+      </div>
 
-        {/* LEFT SIDE */}
+      <div className="grid items-center w-full gap-12 mx-auto max-w-7xl lg:grid-cols-12">
+        
+        {/* ================= LEFT CONTENT COLUMN ================= */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="space-y-6 text-left lg:col-span-7"
         >
-          {/* SMALL LABEL */}
-          <div className="inline-flex items-center px-4 py-2 mb-6 text-sm border rounded-full bg-white/10 border-white/10 backdrop-blur-md text-white/80">
-            Miray Visual Media
+          {/* SMALL INSIGHT BADGE */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest text-white/90 uppercase border rounded-xl bg-white/[0.04] border-white/10 backdrop-blur-md shadow-xl">
+            <span className="w-1.5 h-1.5 bg-[#FE8521] rounded-full animate-pulse" />
+            Premium Studio Experience
           </div>
 
-          {/* HEADING */}
-          <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-6xl">
-            <Typewriter
-              options={{
-                strings: [
-                  "Capturing Moments That Tell Stories",
-                  "Cinematic Visuals That Inspire",
-                  "Photography. Videography. Reels.",
-                ],
-                autoStart: true,
-                loop: true,
-              }}
-            />
+          {/* SPLIT TYPEWRITER HEADER: Locks layouts down to stop mobile content jumps */}
+          <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl leading-[1.15]">
+            <span className="block mb-2 md:inline md:mr-3">We Craft</span>
+            <span className="inline-block text-[#FE8-[#FE8521] border-b-2 border-transparent">
+              <Typewriter
+                options={{
+                  strings: [
+                    "Cinematic Reels.",
+                    "Timeless Stories.",
+                    "Immaculate Portraits.",
+                    "Visual Inspiration.",
+                  ],
+                  autoStart: true,
+                  loop: true,
+                  delay: 60,
+                  deleteSpeed: 40,
+                  wrapperClassName: "text-[#FE8521] font-black",
+                  cursorClassName: "text-[#FE8521] font-light animate-pulse",
+                }}
+              />
+            </span>
           </h1>
 
-          {/* SUBTEXT */}
-          <p className="max-w-xl mb-8 text-base leading-relaxed text-gray-300 md:text-lg">
-            <span className="font-semibold text-[#FE8521]">
-              Creative visuals
-            </span>{" "}
-            crafted with precision and cinematic storytelling
-            for brands, events, weddings, and timeless memories.
+          {/* DESCRIPTIVE BODY BLOCK */}
+          <p className="max-w-xl text-base font-medium leading-relaxed text-white/70 md:text-lg">
+            High-end visual profiles crafted with technical precision and cinematic composition 
+            for premium brands, destination events, and iconic portraiture matrices.
           </p>
 
-          {/* BUTTONS */}
-          <div className="flex flex-wrap gap-4">
-
+          {/* INTERACTION HUB */}
+          <div className="flex flex-wrap items-center gap-4 pt-2">
             <button
               onClick={() => scrollTo("bookshoot")}
-              className="bg-[#FE8521] text-white px-7 py-3 rounded-full font-semibold shadow-lg hover:scale-105 hover:bg-orange-500 transition duration-300"
+              className="w-full sm:w-auto bg-[#FE8521] text-white px-8 py-4 rounded-xl text-xs font-black tracking-widest uppercase shadow-xl hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
             >
               Book a Session
             </button>
 
             <button
-              onClick={() => scrollTo("portfolio")}
-              className="px-7 py-3 rounded-full border border-white/20 bg-white/5 backdrop-blur-md text-white hover:bg-white hover:text-[#015103] transition duration-300"
+              onClick={() => scrollTo("gallery")}
+              className="w-full sm:w-auto px-8 py-4 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-md text-white text-xs font-black tracking-widest uppercase hover:bg-white hover:text-[#041d05] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
             >
-              View Gallery
+              View Gallery Vault
             </button>
-
           </div>
         </motion.div>
 
-        {/* RIGHT SIDE - IMAGE GRID */}
+        {/* ================= RIGHT PICTURE MATRIX COLUMN ================= */}
+        {/* Restructured layout layers safely underneath the layout on compact displays */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative hidden grid-cols-2 gap-5 md:grid"
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="relative grid grid-cols-2 gap-4 mt-6 lg:col-span-5 lg:mt-0"
         >
-
-          {/* IMAGE 1 */}
-          <motion.img
-            animate={{ y: [0, -12, 0] }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            src= {hero1}
-            className="object-cover w-full h-[420px] rounded-[28px] shadow-2xl border border-white/10 hover:scale-[1.03] transition duration-500"
-          />
-
-          {/* IMAGE 2 */}
-          <motion.img
-            animate={{ y: [0, 14, 0] }}
+          {/* PHOTO COMPONENT GRID 1 */}
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
             transition={{
               duration: 6,
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            src={hero2}
-            className="object-cover w-full h-[350px] mt-12 rounded-[28px] shadow-2xl border border-white/10 hover:scale-[1.03] transition duration-500"
-          />
+            className="overflow-hidden rounded-2xl md:rounded-[28px] shadow-2xl border border-white/5 bg-white/[0.02] aspect-[3/4] lg:aspect-auto lg:h-[430px]"
+          >
+            <img
+              src={hero1}
+              alt="Miray Production Grid Asset"
+              loading="eager"
+              className="object-cover w-full h-full pointer-events-none hover:scale-[1.03] transition duration-700 ease-out"
+            />
+          </motion.div>
 
+          {/* PHOTO COMPONENT GRID 2 */}
+          <motion.div
+            animate={{ y: [0, 10, 0] }}
+            transition={{
+              duration: 6,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+            className="overflow-hidden rounded-2xl md:rounded-[28px] shadow-2xl border border-white/5 bg-white/[0.02] aspect-[3/4] lg:aspect-auto lg:h-[370px] mt-8 lg:mt-12"
+          >
+            <img
+              src={hero2}
+              alt="Miray Cinematic Portraiture"
+              loading="eager"
+              className="object-cover w-full h-full pointer-events-none hover:scale-[1.03] transition duration-700 ease-out"
+            />
+          </motion.div>
         </motion.div>
+
       </div>
     </section>
   );

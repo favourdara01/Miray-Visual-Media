@@ -64,15 +64,16 @@ export default function GalleryPage() {
   }, [activeSection, activeSub]);
 
   // ================= FILTERS ROUTING MATRIX =================
+ // ================= STABLE REGISTRY FILTERS =================
   const filtered = media.filter((item) => {
     if (activeSection === "All") return true;
     
-    const matchSec = (item.section || "").toLowerCase() === activeSection.toLowerCase();
-    if (!matchSec) return false;
+    // ✅ FIX: Use direct casing matches to align perfectly with your working GalleryPreview component logic
+    if (item.section !== activeSection) return false;
 
     if (activeSection === "Events") {
       if (!activeSub) return true;
-      return (item.subCategory || "").toLowerCase() === activeSub.toLowerCase();
+      return item.subCategory === activeSub;
     }
     return true;
   });

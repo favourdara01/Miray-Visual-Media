@@ -37,13 +37,13 @@ const Hero = () => {
           {/* SMALL INSIGHT BADGE */}
           <div className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest text-white/90 uppercase border rounded-xl bg-white/[0.04] border-white/10 backdrop-blur-md shadow-xl">
             <span className="w-1.5 h-1.5 bg-[#FE8521] rounded-full animate-pulse" />
-            Premiums Studio Experience
+            Premium Studio Experience
           </div>
 
-          {/* SPLIT TYPEWRITER HEADER: Locks layouts down to stop mobile content jumps */}
+          {/* SPLIT TYPEWRITER HEADER */}
           <h1 className="text-4xl font-black tracking-tight text-white sm:text-5xl md:text-6xl leading-[1.15]">
             <span className="block mb-2 md:inline md:mr-3">We Craft</span>
-            <span className="inline-block text-[#FE8-[#FE8521] border-b-2 border-transparent">
+            <span className="inline-block text-[#FE8521] border-b-2 border-transparent">
               <Typewriter
                 options={{
                   strings: [
@@ -69,26 +69,26 @@ const Hero = () => {
             for premium brands, destination events, and iconic portraiture matrices.
           </p>
 
-          {/* INTERACTION HUB */}
-          <div className="flex flex-wrap items-center gap-4 pt-2">
+          {/* ================= INTERACTION HUB (FIXED MOBILE SIZES) ================= */}
+          {/* Forces a true row layout with zero full-screen width bloating on compact devices */}
+          <div className="flex flex-row flex-wrap items-center w-auto gap-3 pt-2">
             <button
               onClick={() => scrollTo("bookshoot")}
-              className="w-full sm:w-auto bg-[#FE8521] text-white px-8 py-4 rounded-xl text-xs font-black tracking-widest uppercase shadow-xl hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+              className="w-auto px-6 py-3.5 bg-[#FE8521] text-white rounded-xl text-xs font-black tracking-widest uppercase shadow-xl hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 whitespace-nowrap"
             >
               Book a Session
             </button>
 
             <button
               onClick={() => scrollTo("gallery")}
-              className="w-full sm:w-auto px-8 py-4 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-md text-white text-xs font-black tracking-widest uppercase hover:bg-white hover:text-[#041d05] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300"
+              className="w-auto px-6 py-3.5 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-md text-white text-xs font-black tracking-widest uppercase hover:bg-white hover:text-[#041d05] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 whitespace-nowrap"
             >
-              View Gallery Vault
+              View Gallery
             </button>
           </div>
         </motion.div>
 
         {/* ================= RIGHT PICTURE MATRIX COLUMN ================= */}
-        {/* Restructured layout layers safely underneath the layout on compact displays */}
         <motion.div
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}

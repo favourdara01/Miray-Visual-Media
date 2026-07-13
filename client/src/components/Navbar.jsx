@@ -9,7 +9,7 @@ export default function Navbar() {
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
-    // Lock background scrolling when the immersive full-screen menu overlay is active
+    // Locks background window scrolling only while the drawer slider is active
     if (!isOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -17,7 +17,7 @@ export default function Navbar() {
     }
   };
 
-  // ================= SCROLL DETECTION =================
+  // ================= SCROLL DETECTION MECHANISMS =================
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 40);
@@ -49,11 +49,11 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      document.body.style.overflow = "unset"; // Safety cleanup
+      document.body.style.overflow = "unset"; // Global memory leak cleanup wrapper safety
     };
   }, []);
 
-  // ================= SCROLL FUNCTION =================
+  // ================= INTERACTIVE SCROLL NAVIGATION ROUTER =================
   const scrollToSection = (id) => {
     const el = document.getElementById(id);
     if (el) {
@@ -88,15 +88,15 @@ export default function Navbar() {
       >
         <div className="flex items-center justify-between px-6 mx-auto max-w-7xl">
           
-          {/* LOGO */}
+          {/* BASE LOGO */}
           <h1 
             onClick={() => scrollToSection("home")}
-            className="text-xl font-black tracking-tight text-white cursor-pointer md:text-2xl"
+            className="text-xl font-black tracking-tight text-white cursor-pointer"
           >
             Miray<span className="text-[#FE8521]">.</span>Visual
           </h1>
 
-          {/* DESKTOP/WIDE LAPTOP MENU (Shifted to lg: to prevent medium screen crowding) */}
+          {/* DESKTOP/WIDE LAPTOP NAVIGATION HUB (Hides safely beneath 1024px breakpoints) */}
           <ul className="items-center hidden text-xs font-bold tracking-wider uppercase gap-7 lg:flex">
             {navItems.map((section) => (
               <li
@@ -108,7 +108,6 @@ export default function Navbar() {
               >
                 {section === "bookings" ? "Book Shoot" : section}
 
-                {/* SLICK ACTIVE LINE TRANSITION */}
                 {activeSection === section && (
                   <span className="absolute -bottom-2 left-0 w-full h-[2px] bg-[#FE8521] rounded-full" />
                 )}
@@ -116,7 +115,7 @@ export default function Navbar() {
             ))}
           </ul>
 
-          {/* CLIENT ACCESS ACTION NODE */}
+          {/* PRIVATE DESKTOP ACTION CLIENT LINK */}
           <Link
             to="/client/login"
             className="hidden lg:flex items-center justify-center bg-[#FE8521] text-white px-6 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase shadow-md hover:bg-orange-600 active:scale-[0.98] transition-all duration-200"
@@ -124,7 +123,7 @@ export default function Navbar() {
             Client Login
           </Link>
 
-          {/* HAMBURGER TRIGGER GATE (Visible on both mobile and tablet widths) */}
+          {/* HAMBURGER TRIGGER GATE (Kicks in cleanly for both mobile and tablet widths) */}
           <div
             className="relative z-50 flex items-center justify-center w-10 h-10 rounded-xl bg-white/[0.04] border border-white/10 text-lg text-white cursor-pointer lg:hidden hover:bg-white/[0.08] transition"
             onClick={toggleMenu}
@@ -134,25 +133,27 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* ================= PREMIUM FULL-SCREEN OVERLAY MENU ================= */}
+      {/* ================= MINIMALISTIC MOBILE & TABLET SIDEBAR DRAWER PANEL ================= */}
       <div
-        className={`fixed inset-0 z-40 lg:hidden flex flex-col justify-between bg-[#041d05]/95 backdrop-blur-2xl transition-all duration-500 ease-in-out ${
-          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        className={`fixed top-0 right-0 h-screen w-64 z-40 bg-[#031504]/95 backdrop-blur-2xl border-l border-white/[0.05] shadow-2xl p-6 pt-24 transition-transform duration-300 ease-out flex flex-col justify-between lg:hidden ${
+          isOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        {/* Nav Links Stack Container */}
-        <div className="flex flex-col justify-center flex-grow px-8 pt-24 space-y-5">
-          <p className="text-[10px] uppercase font-black tracking-widest text-white/30 border-b border-white/5 pb-2">
-            Navigation Partition
+        {/* Core Nav Link Stack */}
+        <div className="space-y-6">
+          <p className="text-[9px] uppercase font-black tracking-widest text-white/30 border-b border-white/5 pb-2">
+            Navigation Index
           </p>
           
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1">
             {navItems.map((section) => (
               <button
                 key={section}
                 onClick={() => scrollToSection(section)}
-                className={`text-2xl font-black tracking-tight text-left uppercase transition-all duration-200 transform active:scale-95 ${
-                  activeSection === section ? "text-[#FE8521] pl-2" : "text-white hover:text-[#FE8521]"
+                className={`py-2.5 text-xs font-black tracking-widest text-left uppercase transition-all duration-200 rounded-lg px-2 transform active:scale-98 ${
+                  activeSection === section 
+                    ? "text-[#FE8521] bg-white/[0.03]" 
+                    : "text-white/80 hover:text-[#FE8521] hover:bg-white/[0.01]"
                 }`}
               >
                 {section === "bookings" ? "Book A Shoot" : section}
@@ -161,23 +162,31 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Immersive Fixed Bottom Drawer Sheet */}
-        <div className="p-8 space-y-4 border-t border-white/5 bg-black/20">
+        {/* Action Panel Drawer Base */}
+        <div className="pt-4 space-y-4 border-t border-white/5">
           <Link
             to="/client/login"
             onClick={() => {
               setIsOpen(false);
               document.body.style.overflow = "unset";
             }}
-            className="flex items-center justify-center w-full bg-[#FE8521] py-4 rounded-xl text-white font-bold tracking-wider uppercase text-sm shadow-xl active:scale-[0.99] transition"
+            className="flex items-center justify-center w-full bg-[#FE8521] py-3 rounded-xl text-white font-black tracking-widest uppercase text-[10px] shadow-lg active:scale-[0.99] transition"
           >
-            Access Private Vault Gallery 🔑
+            Client Vault 🔑
           </Link>
-          <p className="text-[10px] text-center text-white/30">
-            © {new Date().getFullYear()} Miray Visual Media Premium Studio Platform
+          <p className="text-[8px] tracking-wider text-center text-white/20 uppercase font-bold">
+            © Miray Visual Media
           </p>
         </div>
       </div>
+
+      {/* BLACKDROP GLASS BLUR OUTSIDE CLICK DISMISSER MASK */}
+      {isOpen && (
+        <div 
+          onClick={toggleMenu} 
+          className="fixed inset-0 z-30 w-screen h-screen transition-all bg-black/40 backdrop-blur-xs lg:hidden"
+        />
+      )}
     </>
   );
 }

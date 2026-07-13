@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-// 🎥 LOCAL ASSET IMPORTS
-import artOfLightVideo from "/src/assets/reel1.mp4";
-import foreverMomentsVideo from "/src/assets/videos/forever.mp4";
+// ✅ ALL FRAGILE MP4 IMPORTS REMOVED FROM THIS TOP AREA!
 
+// Array map using clean, static absolute paths pointing to your public folder
 const CINEMATIC_VIDEOS = [
   {
     id: "v1",
-    url: artOfLightVideo,
+    url: "/reel1.mp4", // Points to public/reel1.mp4
     title: "Cinematic Event",
     tag: "Cinematic Reel"
   },
   {
     id: "v2",
-    url: foreverMomentsVideo,
+    url: "/videos/forever.mp4", // Points to public/videos/forever.mp4 (or wherever you placed it inside public)
     title: "Forever Moments",
     tag: "Wedding Highlights"
   }
@@ -25,7 +24,7 @@ const TESTIMONIALS = [
     id: "t1",
     name: "Amina Bello",
     role: "Bride",
-    text: "Miray Visual didn't just take pictures; they captured the exact feeling of our wedding day. Every time I open our gallery, I'm brought to tearss. Truly exceptional work!",
+    text: "Miray Visual didn't just take pictures; they captured the exact feeling of our wedding day. Every time I open our gallery, I'm brought to tears. Truly exceptional work!",
   },
   {
     id: "t2",

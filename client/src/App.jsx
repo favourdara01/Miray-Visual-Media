@@ -14,6 +14,7 @@ import Clients from "./pages/Admin/Clients";
 import AdminClientsPage from "./pages/Admin/AdminClientsPage.jsx";
 import CreateClient from "./pages/Admin/CreateClient.jsx";
 import AdminGalleryView from "./pages/Admin/AdminGalleryView";
+import AdminMessages from "./pages/Admin/AdminMessages"; // ✅ IMPORTED
 
 // ================= CLIENT =================
 import ClientLogin from "./pages/client/Login";
@@ -68,6 +69,11 @@ function App() {
             <Route path="upload" element={<Upload />} />
             <Route path="manage" element={<ManageMedia />} />
             <Route path="bookings" element={<Bookings />} />
+            
+            {/* ✅ ADDED INBOUND MESSAGE & NEWSLETTER ROUTES */}
+            <Route path="messages" element={<AdminMessages />} />
+            <Route path="newsletter" element={<AdminMessages />} />
+            
             <Route path="clients" element={<Clients />} />
             <Route path="create-client" element={<CreateClient />} />
             <Route path="client/:id" element={<AdminClientsPage />} />

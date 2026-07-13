@@ -13,7 +13,8 @@ const Hero = () => {
   return (
     <section
       id="home"
-      className="relative flex items-center min-h-screen px-6 pt-32 pb-16 overflow-hidden md:px-10"
+      // 💎 FIXED: Shifted mobile top padding to pt-44 to add breathing room beneath the menu bar
+      className="relative flex items-center min-h-screen px-6 pb-16 overflow-hidden pt-44 md:px-10 lg:pt-32"
       style={{
         background:
           "linear-gradient(135deg, #021203 0%, #061c07 45%, #0d220e 100%)",

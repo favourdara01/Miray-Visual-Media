@@ -9,6 +9,8 @@ import {
   FaCalendar,
   FaUsers,
   FaUserPlus,
+  FaEnvelope,     // Added for Contacts
+  FaPaperPlane,   // Added for Newsletter
 } from "react-icons/fa";
 
 export default function AdminLayout() {
@@ -20,6 +22,8 @@ export default function AdminLayout() {
     { to: "/admin/upload", label: "Upload Media", icon: <FaUpload /> },
     { to: "/admin/manage", label: "Manage Media", icon: <FaImages /> },
     { to: "/admin/bookings", label: "Bookings", icon: <FaCalendar /> },
+    { to: "/admin/messages", label: "Inquiries & Contacts", icon: <FaEnvelope /> }, // New public tracking
+    { to: "/admin/newsletter", label: "Newsletter List", icon: <FaPaperPlane /> }, // New sub tracker
     { to: "/admin/create-client", label: "Create Client", icon: <FaUserPlus /> },
     { to: "/admin/clients", label: "Clients", icon: <FaUsers /> },
   ];
@@ -29,7 +33,8 @@ export default function AdminLayout() {
       style={{
         background:
           "linear-gradient(to bottom, #f8faf8 0%, #ffffff 50%, #eef6ee 100%)",
-      }}>
+      }}
+    >
 
       {/* 🔥 MOBILE OVERLAY */}
       {open && (
@@ -51,11 +56,11 @@ export default function AdminLayout() {
       >
         {/* HEADER */}
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Miray Admin</h2>
+          <h2 className="text-xl font-bold tracking-tight">Miray Admin</h2>
 
           {/* CLOSE BUTTON (MOBILE) */}
           <button
-            className="md:hidden"
+            className="text-white transition md:hidden hover:text-orange-400"
             onClick={() => setOpen(false)}
           >
             <FaTimes />
@@ -63,8 +68,7 @@ export default function AdminLayout() {
         </div>
 
         {/* NAV */}
-        <nav className="flex flex-col gap-2">
-
+        <nav className="flex flex-col gap-1.5">
           {navLinks.map((link) => {
             const isActive = location.pathname === link.to;
 
@@ -74,11 +78,11 @@ export default function AdminLayout() {
                 to={link.to}
                 onClick={() => setOpen(false)}
                 className={`
-                  flex items-center gap-3 px-4 py-2 rounded-lg transition
+                  flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold tracking-wider uppercase transition-all duration-200
                   ${
                     isActive
-                      ? "bg-white text-[#015103] font-semibold"
-                      : "hover:bg-white/10"
+                      ? "bg-white text-[#015103] shadow-md"
+                      : "hover:bg-white/10 text-white/80"
                   }
                 `}
               >
@@ -87,7 +91,6 @@ export default function AdminLayout() {
               </Link>
             );
           })}
-
         </nav>
       </div>
 
@@ -95,7 +98,7 @@ export default function AdminLayout() {
       <div className="flex-1">
 
         {/* MOBILE HEADER */}
-        <div className="flex items-center justify-between p-4 bg-white shadow-sm md:hidden">
+        <div className="flex items-center justify-between p-4 mb-4 bg-white border shadow-sm border-black/5 rounded-2xl md:hidden">
           <button
             onClick={() => setOpen(true)}
             className="text-xl text-[#015103]"
@@ -103,13 +106,13 @@ export default function AdminLayout() {
             <FaBars />
           </button>
 
-          <h2 className="font-semibold text-[#015103]">
-            Admin Panel
+          <h2 className="font-black text-xs uppercase tracking-widest text-[#015103]">
+            Admin Control Panel
           </h2>
         </div>
 
         {/* PAGE CONTENT */}
-        <div className="p-4 md:p-6">
+        <div className="p-2 md:p-4">
           <Outlet />
         </div>
 

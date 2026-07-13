@@ -8,7 +8,7 @@ export default function AdminMessages() {
   const [activeTab, setActiveTab] = useState("contacts"); 
   const [loading, setLoading] = useState(true);
 
-  // ================= 1. FETCH LOG HISTORY =================
+  // ================= 1. FETCH HISTORICAL REST DATA =================
   const fetchHistoryLogs = async () => {
     try {
       setLoading(true);
@@ -17,8 +17,12 @@ export default function AdminMessages() {
         api.get("/newsletter")
       ]);
       
-      setContacts(contactRes.data?.data || contactRes.data || []);
-      setSubscribers(subRes.data?.data || subRes.data || []);
+      // ✅ SAFETY UNPACKING: Safely extract array layouts even if wrapped in .data or .contacts object wrappers
+      const rawContacts = contactRes.data?.data || contactRes.data?.contacts || contactRes.data || [];
+      const rawSubs = subRes.data?.data || subRes.data?.subscribers || subRes.data || [];
+
+      setContacts(Array.isArray(rawContacts) ? rawContacts : []);
+      setSubscribers(Array.isArray(rawSubs) ? rawSubs : []);
     } catch (err) {
       console.error("Failed to load historical data logs:", err);
     } finally {
@@ -26,7 +30,7 @@ export default function AdminMessages() {
     }
   };
 
-  // ================= 2. LIVE REAL-TIME SOCKET LISTENER =================
+  // ================= 2. LIVE REAL-TIME SOCKET CONNECTION =================
   useEffect(() => {
     fetchHistoryLogs();
 
@@ -37,16 +41,20 @@ export default function AdminMessages() {
     });
 
     socket.on("connect", () => {
-      console.log("⚡ Connected to live message stream");
+      console.log("⚡ Connected to live message stream network");
     });
 
-    // ✅ FIXED STRINGS: Matches your backend emission event name perfectly now!
+    // ✅ FIXED: Listen to your exact backend payload structure string
     socket.on("new-contact-message", (newContactData) => {
-      setContacts((prev) => [newContactData, ...prev]);
+      if (newContactData) {
+        setContacts((prev) => [newContactData, ...prev]);
+      }
     });
 
     socket.on("newSubscriber", (newSubData) => {
-      setSubscribers((prev) => [newSubData, ...prev]);
+      if (newSubData) {
+        setSubscribers((prev) => [newSubData, ...prev]);
+      }
     });
 
     return () => {
@@ -57,7 +65,7 @@ export default function AdminMessages() {
   return (
     <div className="max-w-6xl space-y-6 duration-200 select-none animate-in fade-in">
       
-      {/* HEADER SECTION TITLE */}
+      {/* HEADER ROW BAR */}
       <div className="flex items-center justify-between">
         <div>
           <span className="text-[#FE8521] text-[10px] font-black tracking-widest uppercase">Live Inbound Streams</span>
@@ -70,7 +78,7 @@ export default function AdminMessages() {
         </div>
       </div>
 
-      {/* TABS CONTROLLERS */}
+      {/* NAVIGATION TABS SELECTORS */}
       <div className="flex gap-2 border-b border-gray-200">
         <button
           onClick={() => setActiveTab("contacts")}
@@ -92,7 +100,7 @@ export default function AdminMessages() {
         </button>
       </div>
 
-      {/* MATRIX LOG CONTENT CANVAS */}
+      {/* DATA VISUALIZER CANVAS */}
       {loading ? (
         <div className="py-24 space-y-3 text-center">
           <div className="w-7 h-7 border-2 border-gray-200 border-t-[#FE8521] rounded-full animate-spin mx-auto" />
@@ -104,7 +112,8 @@ export default function AdminMessages() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {contacts.map((msg) => (
-              <div key={msg._id || msg.id} className="p-5 space-y-3 transition duration-300 bg-white border shadow-sm border-black/5 rounded-2xl hover:shadow-md">
+              // ✅ FIXED KEY LOOKUP: Checks for both msg.id or msg._id so render arrays never crash
+              <div key={msg.id || msg._id || Math.random().toString()} className="p-5 space-y-3 transition duration-300 bg-white border shadow-sm border-black/5 rounded-2xl hover:shadow-md">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <h4 className="text-sm font-bold text-gray-800">{msg.name}</h4>
@@ -136,7 +145,7 @@ export default function AdminMessages() {
               </thead>
               <tbody className="text-xs font-semibold text-gray-600 divide-y divide-gray-100/60">
                 {subscribers.map((sub) => (
-                  <tr key={sub._id || sub.id} className="transition hover:bg-gray-50/30">
+                  <tr key={sub.id || sub._id || Math.random().toString()} className="transition hover:bg-gray-50/30">
                     <td className="p-4 pl-6 font-bold text-gray-800">{sub.email}</td>
                     <td className="p-4 pr-6 font-medium text-right text-gray-400">
                       {new Date(sub.createdAt || Date.now()).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}

@@ -25,7 +25,7 @@ const TESTIMONIALS = [
     id: "t1",
     name: "Amina Bello",
     role: "Bride",
-    text: "Miray Visual didn't just take pictures; they captured the exact feeling of our wedding day. Every time I open our gallery, I'm brought to tears. Truly exceptional work!",
+    text: "Miray Visual didn't just take pictures; they captured the exact feeling of our wedding day. Every time I open our gallery, I'm brought to tearss. Truly exceptional work!",
   },
   {
     id: "t2",

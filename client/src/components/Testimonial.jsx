@@ -2,8 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // 🎥 LOCAL ASSET IMPORTS
-import artOfLightVideo from "../../assets/reel1.mp4";
-import foreverMomentsVideo from "../../assets/videos/forever-moments.mp4";
+import artOfLightVideo from "/src/assets/reel1.mp4";
+import foreverMomentsVideo from "/src/assets/videos/forever.mp4";
 
 const CINEMATIC_VIDEOS = [
   {

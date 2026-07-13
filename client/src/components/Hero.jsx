@@ -37,7 +37,7 @@ const Hero = () => {
           {/* SMALL INSIGHT BADGE */}
           <div className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold tracking-widest text-white/90 uppercase border rounded-xl bg-white/[0.04] border-white/10 backdrop-blur-md shadow-xl">
             <span className="w-1.5 h-1.5 bg-[#FE8521] rounded-full animate-pulse" />
-            Premium Studio Experience
+            Premiums Studio Experience
           </div>
 
           {/* SPLIT TYPEWRITER HEADER: Locks layouts down to stop mobile content jumps */}

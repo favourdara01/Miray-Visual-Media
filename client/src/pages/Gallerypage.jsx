@@ -38,7 +38,7 @@ export default function GalleryPage() {
   const fetchMedia = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/media");
+      const res = await api.get("/media/portfolio");
       const data = res.data;
 
       let rawArray = [];

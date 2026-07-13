@@ -3,12 +3,21 @@ import api from "../../api/axios";
 import { io } from "socket.io-client";
 
 export default function AdminMessages() {
-  const [contacts, setContacts] = useState([]);
-  const [subscribers, setSubscribers] = useState([]);
-  const [activeTab, setActiveTab] = useState("contacts"); 
-  const [loading, setLoading] = useState(true);
+  // 💾 Initialize state directly from localStorage if it exists so things stay visible instantly
+  const [contacts, setContacts] = useState(() => {
+    const saved = localStorage.getItem("miray_contacts_archive");
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  const [subscribers, setSubscribers] = useState(() => {
+    const saved = localStorage.getItem("miray_subscribers_archive");
+    return saved ? JSON.parse(saved) : [];
+  });
 
-  // ================= 1. FETCH HISTORICAL REST DATA =================
+  const [activeTab, setActiveTab] = useState("contacts"); 
+  const [loading, setLoading] = useState(false);
+
+  // ================= 1. SYNC & FETCH DATABASE RECORDS =================
   const fetchHistoryLogs = async () => {
     try {
       setLoading(true);
@@ -17,20 +26,41 @@ export default function AdminMessages() {
         api.get("/newsletter")
       ]);
       
-      // ✅ SAFETY UNPACKING: Safely extract array layouts even if wrapped in .data or .contacts object wrappers
       const rawContacts = contactRes.data?.data || contactRes.data?.contacts || contactRes.data || [];
       const rawSubs = subRes.data?.data || subRes.data?.subscribers || subRes.data || [];
 
-      setContacts(Array.isArray(rawContacts) ? rawContacts : []);
-      setSubscribers(Array.isArray(rawSubs) ? rawSubs : []);
+      // Combine database records with local records to ensure zero loss
+      setContacts((prev) => {
+        const merged = Array.isArray(rawContacts) ? [...rawContacts] : [];
+        // Keep any unsaved local socket items that might not be in the database response yet
+        prev.forEach(item => {
+          if (!merged.some(m => (m.id || m._id) === (item.id || item._id))) {
+            merged.push(item);
+          }
+        });
+        localStorage.setItem("miray_contacts_archive", JSON.stringify(merged));
+        return merged;
+      });
+
+      setSubscribers((prev) => {
+        const merged = Array.isArray(rawSubs) ? [...rawSubs] : [];
+        prev.forEach(item => {
+          if (!merged.some(m => (m.id || m._id) === (item.id || item._id))) {
+            merged.push(item);
+          }
+        });
+        localStorage.setItem("miray_subscribers_archive", JSON.stringify(merged));
+        return merged;
+      });
+
     } catch (err) {
-      console.error("Failed to load historical data logs:", err);
+      console.warn("Database sync offline, running on persistent local storage backup logs:", err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= 2. LIVE REAL-TIME SOCKET CONNECTION =================
+  // ================= 2. LIVE REAL-TIME SOCKET STREAMS =================
   useEffect(() => {
     fetchHistoryLogs();
 
@@ -44,16 +74,27 @@ export default function AdminMessages() {
       console.log("⚡ Connected to live message stream network");
     });
 
-    // ✅ FIXED: Listen to your exact backend payload structure string
+    // Listen to real-time additions and save to cache immediately
     socket.on("new-contact-message", (newContactData) => {
       if (newContactData) {
-        setContacts((prev) => [newContactData, ...prev]);
+        setContacts((prev) => {
+          // Prevent duplicates
+          if (prev.some(item => (item.id || item._id) === (newContactData.id || newContactData._id))) return prev;
+          const updated = [newContactData, ...prev];
+          localStorage.setItem("miray_contacts_archive", JSON.stringify(updated));
+          return updated;
+        });
       }
     });
 
     socket.on("newSubscriber", (newSubData) => {
       if (newSubData) {
-        setSubscribers((prev) => [newSubData, ...prev]);
+        setSubscribers((prev) => {
+          if (prev.some(item => (item.id || item._id) === (newSubData.id || newSubData._id))) return prev;
+          const updated = [newSubData, ...prev];
+          localStorage.setItem("miray_subscribers_archive", JSON.stringify(updated));
+          return updated;
+        });
       }
     });
 
@@ -65,20 +106,20 @@ export default function AdminMessages() {
   return (
     <div className="max-w-6xl space-y-6 duration-200 select-none animate-in fade-in">
       
-      {/* HEADER ROW BAR */}
+      {/* HEADER BAR ROW */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[#FE8521] text-[10px] font-black tracking-widest uppercase">Live Inbound Streams</span>
+          <span className="text-[#FE8521] text-[10px] font-black tracking-widest uppercase">Permanent Studio Records</span>
           <h2 className="text-3xl font-black text-[#015103] tracking-tight">Communications Desk</h2>
           <div className="w-12 h-[3px] bg-[#FE8521] rounded-full mt-1" />
         </div>
         <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-100 px-3 py-1 rounded-xl text-[9px] font-bold text-emerald-600 uppercase">
           <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping" />
-          Live Feed Open
+          Archive Vault Engaged
         </div>
       </div>
 
-      {/* NAVIGATION TABS SELECTORS */}
+      {/* TABS CONTROLLERS */}
       <div className="flex gap-2 border-b border-gray-200">
         <button
           onClick={() => setActiveTab("contacts")}
@@ -100,11 +141,11 @@ export default function AdminMessages() {
         </button>
       </div>
 
-      {/* DATA VISUALIZER CANVAS */}
-      {loading ? (
+      {/* ARRAYS RENDERING VISUALIZER CANVAS */}
+      {loading && contacts.length === 0 && subscribers.length === 0 ? (
         <div className="py-24 space-y-3 text-center">
           <div className="w-7 h-7 border-2 border-gray-200 border-t-[#FE8521] rounded-full animate-spin mx-auto" />
-          <p className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Syncing Server History Arrays...</p>
+          <p className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Verifying Archive Databases...</p>
         </div>
       ) : activeTab === "contacts" ? (
         contacts.length === 0 ? (
@@ -112,7 +153,6 @@ export default function AdminMessages() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {contacts.map((msg) => (
-              // ✅ FIXED KEY LOOKUP: Checks for both msg.id or msg._id so render arrays never crash
               <div key={msg.id || msg._id || Math.random().toString()} className="p-5 space-y-3 transition duration-300 bg-white border shadow-sm border-black/5 rounded-2xl hover:shadow-md">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -120,7 +160,7 @@ export default function AdminMessages() {
                     <p className="text-[11px] font-semibold text-[#FE8521] break-all">{msg.email}</p>
                   </div>
                   <span className="text-[9px] font-black tracking-wider text-gray-400 bg-gray-50/80 px-2.5 py-1 rounded-lg border border-gray-100 whitespace-nowrap uppercase">
-                    {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "New"}
+                    {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "Saved"}
                   </span>
                 </div>
                 <div className="w-full h-px bg-gray-100/60" />
